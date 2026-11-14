@@ -1,0 +1,265 @@
+** Drc report for twin_medic_wroom32_1layer.kicad_pcb **
+** Created on 2026-06-07T16:36:15+0100 **
+
+** Found 28 DRC violations **
+[lib_footprint_issues]: Footprint 'ESP32-WROOM-32_Custom_1Layer' not found in library 'RF_Module'.
+    Local override; warning
+    @(50.0000 mm, 25.0000 mm): Footprint U1
+[lib_footprint_mismatch]: Footprint 'PinHeader_1x02_P2.54mm_Horizontal' does not match copy in library 'Connector_PinHeader_2.54mm'.
+    Local override; warning
+    @(9.0000 mm, 55.0000 mm): Footprint J1
+[lib_footprint_mismatch]: Footprint 'PinHeader_1x06_P2.54mm_Horizontal' does not match copy in library 'Connector_PinHeader_2.54mm'.
+    Local override; warning
+    @(71.0000 mm, 55.0000 mm): Footprint J2
+[lib_footprint_mismatch]: Footprint 'PinHeader_1x05_P2.54mm_Horizontal' does not match copy in library 'Connector_PinHeader_2.54mm'.
+    Local override; warning
+    @(9.0000 mm, 10.0000 mm): Footprint J3
+[lib_footprint_mismatch]: Footprint 'PinHeader_1x04_P2.54mm_Horizontal' does not match copy in library 'Connector_PinHeader_2.54mm'.
+    Local override; warning
+    @(73.0000 mm, 14.0000 mm): Footprint J4
+[lib_footprint_mismatch]: Footprint 'PinHeader_1x05_P2.54mm_Horizontal' does not match copy in library 'Connector_PinHeader_2.54mm'.
+    Local override; warning
+    @(73.0000 mm, 22.0000 mm): Footprint J5
+[lib_footprint_mismatch]: Footprint 'PinHeader_1x03_P2.54mm_Horizontal' does not match copy in library 'Connector_PinHeader_2.54mm'.
+    Local override; warning
+    @(9.0000 mm, 25.0000 mm): Footprint J6
+[lib_footprint_mismatch]: Footprint 'PinHeader_1x03_P2.54mm_Horizontal' does not match copy in library 'Connector_PinHeader_2.54mm'.
+    Local override; warning
+    @(9.0000 mm, 31.0000 mm): Footprint J7
+[lib_footprint_mismatch]: Footprint 'PinHeader_1x03_P2.54mm_Horizontal' does not match copy in library 'Connector_PinHeader_2.54mm'.
+    Local override; warning
+    @(9.0000 mm, 37.0000 mm): Footprint J8
+[lib_footprint_mismatch]: Footprint 'PinHeader_1x03_P2.54mm_Horizontal' does not match copy in library 'Connector_PinHeader_2.54mm'.
+    Local override; warning
+    @(9.0000 mm, 43.0000 mm): Footprint J9
+[lib_footprint_mismatch]: Footprint 'PinHeader_1x03_P2.54mm_Horizontal' does not match copy in library 'Connector_PinHeader_2.54mm'.
+    Local override; warning
+    @(9.0000 mm, 49.0000 mm): Footprint J10
+[lib_footprint_mismatch]: Footprint 'PinHeader_1x02_P2.54mm_Horizontal' does not match copy in library 'Connector_PinHeader_2.54mm'.
+    Local override; warning
+    @(73.0000 mm, 42.0000 mm): Footprint J11
+[lib_footprint_mismatch]: Footprint 'PinHeader_1x02_P2.54mm_Horizontal' does not match copy in library 'Connector_PinHeader_2.54mm'.
+    Local override; warning
+    @(73.0000 mm, 47.0000 mm): Footprint J12
+[lib_footprint_mismatch]: Footprint 'MountingHole_2.7mm_M2.5' does not match copy in library 'MountingHole'.
+    Local override; warning
+    @(30.0000 mm, 8.0000 mm): Footprint H1
+[lib_footprint_mismatch]: Footprint 'MountingHole_2.7mm_M2.5' does not match copy in library 'MountingHole'.
+    Local override; warning
+    @(87.0000 mm, 8.0000 mm): Footprint H2
+[lib_footprint_mismatch]: Footprint 'MountingHole_2.7mm_M2.5' does not match copy in library 'MountingHole'.
+    Local override; warning
+    @(8.0000 mm, 62.0000 mm): Footprint H3
+[lib_footprint_mismatch]: Footprint 'MountingHole_2.7mm_M2.5' does not match copy in library 'MountingHole'.
+    Local override; warning
+    @(87.0000 mm, 62.0000 mm): Footprint H4
+[text_height]: Text height out of range (board setup constraints silk text height min height 0.8000 mm; actual 0.7500 mm)
+    Rule: board setup constraints silk text height; warning
+    @(69.0000 mm, 38.5000 mm): PCB text 'GPIO36/39 INPUT ONLY' on F.Silkscreen
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(25.0000 mm, 7.2000 mm): PCB text 'TWIN-MEDIC WROOM32 1-LAYER' on F.Silkscreen
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(59.0000 mm, 12.2500 mm): Segment of U1 on F.Silkscreen
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(41.0000 mm, 37.7500 mm): Segment of U1 on F.Silkscreen
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(30.0000 mm, 6.0000 mm): Reference field of H1
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(87.0000 mm, 6.0000 mm): Reference field of H2
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(8.0000 mm, 60.0000 mm): Reference field of H3
+[silk_over_copper]: Silkscreen clipped by solder mask
+    Local override; warning
+    @(87.0000 mm, 60.0000 mm): Reference field of H4
+[silk_overlap]: Silkscreen overlap
+    Rule: board setup constraints silk; warning
+    @(70.0000 mm, 52.0000 mm): PCB text '3.3V INPUT ONLY' on F.Silkscreen
+    @(71.0000 mm, 52.2000 mm): Reference field of J2
+[silk_overlap]: Silkscreen overlap
+    Rule: board setup constraints silk; warning
+    @(69.0000 mm, 38.5000 mm): PCB text 'GPIO36/39 INPUT ONLY' on F.Silkscreen
+    @(73.0000 mm, 39.2000 mm): Reference field of J11
+[silk_overlap]: Silkscreen overlap
+    Rule: board setup constraints silk; warning
+    @(73.0000 mm, 44.2000 mm): Reference field of J12
+    @(77.1400 mm, 43.6000 mm): Segment of J11 on F.Silkscreen
+
+** Found 42 unconnected pads **
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(11.5400 mm, 10.0000 mm): PTH pad 2 [GND] of J3
+    @(11.5400 mm, 25.0000 mm): PTH pad 2 [GND] of J6
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(11.5400 mm, 25.0000 mm): PTH pad 2 [GND] of J6
+    @(11.5400 mm, 31.0000 mm): PTH pad 2 [GND] of J7
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(11.5400 mm, 31.0000 mm): PTH pad 2 [GND] of J7
+    @(11.5400 mm, 37.0000 mm): PTH pad 2 [GND] of J8
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(11.5400 mm, 37.0000 mm): PTH pad 2 [GND] of J8
+    @(11.5400 mm, 43.0000 mm): PTH pad 2 [GND] of J9
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(11.5400 mm, 43.0000 mm): PTH pad 2 [GND] of J9
+    @(11.5400 mm, 49.0000 mm): PTH pad 2 [GND] of J10
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(11.5400 mm, 49.0000 mm): PTH pad 2 [GND] of J10
+    @(11.5400 mm, 55.0000 mm): PTH pad 2 [GND] of J1
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(40.6000 mm, 31.3500 mm): Pad 15 [GND] of U1 on top_copper
+    @(40.6000 mm, 13.5700 mm): Pad 1 [GND] of U1 on top_copper
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(40.6000 mm, 31.3500 mm): Pad 15 [GND] of U1 on top_copper
+    @(11.5400 mm, 31.0000 mm): PTH pad 2 [GND] of J7
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(59.4000 mm, 13.5700 mm): Pad 38 [GND] of U1 on top_copper
+    @(40.6000 mm, 13.5700 mm): Pad 1 [GND] of U1 on top_copper
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(71.0000 mm, 55.0000 mm): PTH pad 1 [GND] of J2
+    @(75.5400 mm, 47.0000 mm): PTH pad 2 [GND] of J12
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(75.5400 mm, 14.0000 mm): PTH pad 2 [GND] of J4
+    @(59.4000 mm, 13.5700 mm): Pad 38 [GND] of U1 on top_copper
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(75.5400 mm, 22.0000 mm): PTH pad 2 [GND] of J5
+    @(75.5400 mm, 14.0000 mm): PTH pad 2 [GND] of J4
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(75.5400 mm, 47.0000 mm): PTH pad 2 [GND] of J12
+    @(75.5400 mm, 22.0000 mm): PTH pad 2 [GND] of J5
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(9.0000 mm, 10.0000 mm): PTH pad 1 [3V3] of J3
+    @(9.0000 mm, 25.0000 mm): PTH pad 1 [3V3] of J6
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(9.0000 mm, 10.0000 mm): PTH pad 1 [3V3] of J3
+    @(40.6000 mm, 14.8400 mm): Pad 2 [3V3] of U1 on top_copper
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(9.0000 mm, 25.0000 mm): PTH pad 1 [3V3] of J6
+    @(9.0000 mm, 31.0000 mm): PTH pad 1 [3V3] of J7
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(9.0000 mm, 31.0000 mm): PTH pad 1 [3V3] of J7
+    @(9.0000 mm, 37.0000 mm): PTH pad 1 [3V3] of J8
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(9.0000 mm, 37.0000 mm): PTH pad 1 [3V3] of J8
+    @(9.0000 mm, 43.0000 mm): PTH pad 1 [3V3] of J9
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(9.0000 mm, 43.0000 mm): PTH pad 1 [3V3] of J9
+    @(9.0000 mm, 49.0000 mm): PTH pad 1 [3V3] of J10
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(9.0000 mm, 49.0000 mm): PTH pad 1 [3V3] of J10
+    @(9.0000 mm, 55.0000 mm): PTH pad 1 [3V3] of J1
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(40.6000 mm, 14.8400 mm): Pad 2 [3V3] of U1 on top_copper
+    @(73.0000 mm, 14.0000 mm): PTH pad 1 [3V3] of J4
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(73.0000 mm, 14.0000 mm): PTH pad 1 [3V3] of J4
+    @(73.0000 mm, 22.0000 mm): PTH pad 1 [3V3] of J5
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(73.0000 mm, 22.0000 mm): PTH pad 1 [3V3] of J5
+    @(73.0000 mm, 42.0000 mm): PTH pad 1 [3V3] of J11
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(73.5400 mm, 55.0000 mm): PTH pad 2 [3V3] of J2
+    @(73.0000 mm, 42.0000 mm): PTH pad 1 [3V3] of J11
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(75.5400 mm, 42.0000 mm): PTH pad 2 [EN] of J11
+    @(40.6000 mm, 16.1100 mm): Pad 3 [EN] of U1 on top_copper
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(76.0800 mm, 55.0000 mm): PTH pad 3 [EN] of J2
+    @(75.5400 mm, 42.0000 mm): PTH pad 2 [EN] of J11
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(73.0000 mm, 47.0000 mm): PTH pad 1 [GPIO0_BOOT] of J12
+    @(59.4000 mm, 30.0800 mm): Pad 25 [GPIO0_BOOT] of U1 on top_copper
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(78.6200 mm, 55.0000 mm): PTH pad 4 [GPIO0_BOOT] of J2
+    @(73.0000 mm, 47.0000 mm): PTH pad 1 [GPIO0_BOOT] of J12
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(59.4000 mm, 18.6500 mm): Pad 34 [U0RXD] of U1 on top_copper
+    @(81.1600 mm, 55.0000 mm): PTH pad 5 [U0RXD] of J2
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(59.4000 mm, 17.3800 mm): Pad 35 [U0TXD] of U1 on top_copper
+    @(83.7000 mm, 55.0000 mm): PTH pad 6 [U0TXD] of J2
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(14.0800 mm, 10.0000 mm): PTH pad 3 [GPIO34_ECG_OUT] of J3
+    @(40.6000 mm, 19.9200 mm): Pad 6 [GPIO34_ECG_OUT] of U1 on top_copper
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(16.6200 mm, 10.0000 mm): PTH pad 4 [GPIO25_ECG_LOP] of J3
+    @(40.6000 mm, 25.0000 mm): Pad 10 [GPIO25_ECG_LOP] of U1 on top_copper
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(19.1600 mm, 10.0000 mm): PTH pad 5 [GPIO26_ECG_LOM] of J3
+    @(40.6000 mm, 26.2700 mm): Pad 11 [GPIO26_ECG_LOM] of U1 on top_copper
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(14.0800 mm, 25.0000 mm): PTH pad 3 [GPIO35_PIEZO_RA] of J6
+    @(40.6000 mm, 21.1900 mm): Pad 7 [GPIO35_PIEZO_RA] of U1 on top_copper
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(14.0800 mm, 31.0000 mm): PTH pad 3 [GPIO32_PIEZO_LA] of J7
+    @(40.6000 mm, 22.4600 mm): Pad 8 [GPIO32_PIEZO_LA] of U1 on top_copper
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(14.0800 mm, 37.0000 mm): PTH pad 3 [GPIO33_PIEZO_RL] of J8
+    @(40.6000 mm, 23.7300 mm): Pad 9 [GPIO33_PIEZO_RL] of U1 on top_copper
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(14.0800 mm, 43.0000 mm): PTH pad 3 [GPIO36_PIEZO_LL] of J9
+    @(40.6000 mm, 17.3800 mm): Pad 4 [GPIO36_PIEZO_LL] of U1 on top_copper
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(14.0800 mm, 49.0000 mm): PTH pad 3 [GPIO39_PIEZO_CHEST] of J10
+    @(40.6000 mm, 18.6500 mm): Pad 5 [GPIO39_PIEZO_CHEST] of U1 on top_copper
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(59.4000 mm, 19.9200 mm): Pad 33 [GPIO21_SDA] of U1 on top_copper
+    @(78.0800 mm, 22.0000 mm): PTH pad 3 [GPIO21_SDA] of J5
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(78.0800 mm, 22.0000 mm): PTH pad 3 [GPIO21_SDA] of J5
+    @(78.0800 mm, 14.0000 mm): PTH pad 3 [GPIO21_SDA] of J4
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(80.6200 mm, 14.0000 mm): PTH pad 4 [GPIO22_SCL] of J4
+    @(59.4000 mm, 16.1100 mm): Pad 36 [GPIO22_SCL] of U1 on top_copper
+[unconnected_items]: Missing connection between items
+    Local override; warning
+    @(80.6200 mm, 22.0000 mm): PTH pad 4 [GPIO22_SCL] of J5
+    @(80.6200 mm, 14.0000 mm): PTH pad 4 [GPIO22_SCL] of J4
+
+** Found 0 Footprint errors **
+
+** End of Report **

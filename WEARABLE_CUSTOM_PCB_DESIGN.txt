@@ -1,0 +1,801 @@
+TWIN-MEDIC WEARABLE CUSTOM PCB DESIGN
+====================================
+
+File purpose
+------------
+This is a separate design file for a wearable custom PCB version of the Twin-Medic ESP32 project.
+
+It is written as a PCB design brief that can be used in KiCad, EasyEDA, Altium, or given to a PCB designer.
+
+Current firmware target:
+- ESP32 DevKit / ESP32-WROOM family
+- 5 analog piezo vibration modules
+- AD8232 ECG module
+- GY-MAX30102 pulse oximeter module
+- MPU-9250 / MPU-6500 motion sensor
+- WiFi dashboard telemetry
+
+
+1. Wearable Design Goal
+-----------------------
+
+Design a compact wearable PCB that can be mounted on the chest, vest, belt, or armband.
+
+The board must:
+- Read 5 body-zone piezo sensors.
+- Read ECG from AD8232.
+- Read SpO2/pulse from MAX30102.
+- Read body motion from MPU-9250/6500.
+- Send data by WiFi using ESP32.
+- Run from USB or LiPo battery.
+- Be comfortable and safe for prototype demonstration.
+- Keep body-connected ECG circuitry as safe and isolated as possible.
+
+
+2. Recommended Wearable Architecture
+------------------------------------
+
+Use a central wearable PCB plus external sensor patches.
+
+Central PCB:
+- ESP32
+- Power management
+- Battery connector
+- USB charging/programming
+- MPU motion sensor
+- Connectors for AD8232, MAX30102, and 5 piezo sensors
+
+External sensor patches:
+- Piezo patches on right arm, left arm, right leg, left leg, and chest
+- ECG electrodes connected through AD8232
+- MAX30102 placed on finger, earlobe, or small strap location
+
+Why this architecture:
+- The central board stays small.
+- The sensors can be placed on the correct body zones.
+- Damaged sensors/cables can be replaced.
+- The design remains compatible with the current ESP32 firmware.
+
+
+3. Board Size and Shape
+-----------------------
+
+Recommended board type:
+- Rigid PCB for version 1
+- Rounded rectangular shape
+- 2-layer PCB minimum
+- 4-layer PCB preferred if budget allows
+
+Recommended dimensions:
+- Width: 60 mm
+- Height: 42 mm
+- Corner radius: 4 mm to 6 mm
+- Thickness: 1.0 mm or 1.2 mm for comfort
+
+Alternative smaller version:
+- Width: 50 mm
+- Height: 35 mm
+- Only possible if using ESP32-WROOM module instead of full ESP32 DevKit
+
+Mounting:
+- 4 mounting holes, diameter 2.2 mm to 3.0 mm
+- One hole near each corner
+- Keep mounting holes away from antenna zone and analog ECG traces
+- Add smooth edges or enclosure to avoid skin irritation
+
+Wearable orientation:
+- USB connector on one short edge
+- ESP32 antenna at the opposite edge or board edge
+- Sensor connectors along left/right/bottom edges
+- Battery connector on bottom or back side
+
+
+4. Recommended First PCB Version
+--------------------------------
+
+For the competition prototype, use this design:
+
+Version: V1 wearable carrier board
+
+Core choices:
+- ESP32 DevKit socket OR ESP32-WROOM module
+- Plug-in sensor modules instead of bare sensor chips
+- JST-PH or JST-SH connectors for wearable cables
+- LiPo battery connector
+- USB power/programming
+- 3.3V logic everywhere
+
+This is the fastest and safest path.
+
+Do not start with bare MAX30102 or bare AD8232 unless you have time for analog/optical PCB validation.
+
+
+5. Block Diagram
+----------------
+
+                +-------------------------------+
+                |       WEARABLE MAIN PCB       |
+                |                               |
+USB/Battery --->| Power + Charger + 3.3V Reg    |
+                |                               |
+                | ESP32 WiFi Controller         |
+                |                               |
+Piezo R Arm --->| ADC GPIO35                    |
+Piezo L Arm --->| ADC GPIO32                    |
+Piezo R Leg --->| ADC GPIO33                    |
+Piezo L Leg --->| ADC GPIO36                    |
+Piezo Chest --->| ADC GPIO39                    |
+                |                               |
+AD8232 OUT  --->| ADC GPIO34                    |
+AD8232 LO+  --->| GPIO25                        |
+AD8232 LO-  --->| GPIO26                        |
+                |                               |
+MAX30102   ---->| I2C SDA21 / SCL22             |
+MPU9250/6500 -->| I2C SDA21 / SCL22             |
+                +-------------------------------+
+
+
+6. Current Firmware Pin Map
+---------------------------
+
+Use exactly this pin map to stay compatible with the existing code.
+
+ECG:
+- ECG_OUT: GPIO34
+- ECG_LO_PLUS: GPIO25
+- ECG_LO_MINUS: GPIO26
+
+Piezo:
+- PIEZO_RIGHT_ARM_AO: GPIO35
+- PIEZO_LEFT_ARM_AO: GPIO32
+- PIEZO_RIGHT_LEG_AO: GPIO33
+- PIEZO_LEFT_LEG_AO: GPIO36
+- PIEZO_CHEST_AO: GPIO39
+
+I2C:
+- I2C_SDA: GPIO21
+- I2C_SCL: GPIO22
+
+Power:
+- 3V3: all sensor logic and ESP32
+- GND: common ground
+
+Optional GPS:
+- GPS_RX_TO_ESP32: GPIO16
+- GPS_TX_FROM_ESP32: GPIO17
+
+
+7. Connector Plan
+-----------------
+
+Use locking connectors for wearable cables.
+
+Recommended connector family:
+- JST-PH 2.0 mm for easy hand assembly
+- JST-SH 1.0 mm for compact final board
+- 2.54 mm headers only for bench prototype
+
+
+J1 - USB-C or Micro-USB
+
+Function:
+- Power input
+- Programming if using USB-UART on custom ESP32 module design
+
+Pins:
+- VBUS 5V
+- D-
+- D+
+- GND
+- CC1/CC2 if USB-C
+
+
+J2 - LiPo Battery
+
+Connector:
+- JST-PH 2-pin
+
+Pins:
+1. BAT+
+2. GND
+
+Recommended battery:
+- 3.7V LiPo
+- 500 mAh to 1000 mAh for wearable demo
+
+
+J3 - AD8232 ECG Module Connector
+
+Connector:
+- 6-pin JST-PH/JST-SH or 2.54 mm header
+
+Pins:
+1. 3V3
+2. GND
+3. ECG_OUT -> GPIO34 through analog protection
+4. LO+ -> GPIO25
+5. LO- -> GPIO26
+6. SDN optional, pull high or connect to spare GPIO if needed
+
+Silkscreen label:
+AD8232 ECG
+3V3 GND OUT LO+ LO- SDN
+
+
+J4 - MAX30102 Connector
+
+Connector:
+- 4-pin JST
+
+Pins:
+1. 3V3
+2. GND
+3. SDA -> GPIO21
+4. SCL -> GPIO22
+
+Silkscreen label:
+MAX30102 I2C
+3V3 GND SDA SCL
+
+
+J5 - MPU-9250 / MPU-6500 Connector
+
+Connector:
+- 5-pin JST
+
+Pins:
+1. 3V3
+2. GND
+3. SDA -> GPIO21
+4. SCL -> GPIO22
+5. INT optional, connect to spare GPIO or leave NC
+
+Silkscreen label:
+MPU I2C
+3V3 GND SDA SCL INT
+
+
+J6 - Piezo Right Arm
+
+Connector:
+- 3-pin JST
+
+Pins:
+1. 3V3
+2. GND
+3. AO -> GPIO35 through analog protection
+
+
+J7 - Piezo Left Arm
+
+Pins:
+1. 3V3
+2. GND
+3. AO -> GPIO32 through analog protection
+
+
+J8 - Piezo Right Leg
+
+Pins:
+1. 3V3
+2. GND
+3. AO -> GPIO33 through analog protection
+
+
+J9 - Piezo Left Leg
+
+Pins:
+1. 3V3
+2. GND
+3. AO -> GPIO36 through analog protection
+
+Important:
+- GPIO36 has no internal pullup or pulldown.
+- Add external 1 MOhm pulldown on this AO line.
+
+
+J10 - Piezo Chest
+
+Pins:
+1. 3V3
+2. GND
+3. AO -> GPIO39 through analog protection
+
+Important:
+- GPIO39 has no internal pullup or pulldown.
+- Add external 1 MOhm pulldown on this AO line.
+
+
+J11 - Optional GPS Connector
+
+Connector:
+- 4-pin JST
+
+Pins:
+1. 3V3 or 5V depending on GPS module
+2. GND
+3. GPS_TX -> ESP32 GPIO16 RX
+4. GPS_RX -> ESP32 GPIO17 TX
+
+
+8. Analog Input Protection
+--------------------------
+
+Add this circuit on every analog input line:
+
+Sensor AO ---- Rseries ---- ESP32 ADC pin
+                    |
+                 Cfilter
+                    |
+                   GND
+
+Also add:
+
+ESP32 ADC pin ---- Rpulldown ---- GND
+
+Recommended values:
+- Rseries: 1 kOhm
+- Cfilter: 10 nF to 100 nF
+- Rpulldown for piezo AO: 1 MOhm
+
+Use for these lines:
+- ECG_OUT -> GPIO34
+- Piezo right arm -> GPIO35
+- Piezo left arm -> GPIO32
+- Piezo right leg -> GPIO33
+- Piezo left leg -> GPIO36
+- Piezo chest -> GPIO39
+
+Optional stronger protection:
+- Low capacitance TVS diode to GND on external sensor connectors
+- Schottky clamp to 3.3V and GND on piezo lines if raw piezo spikes are possible
+
+Important:
+- If using analog piezo modules, connect module AO only.
+- If using raw piezo discs, do not connect directly to ESP32 ADC. Use a conditioning circuit.
+
+
+9. Power Design
+---------------
+
+Recommended rails:
+- BAT: LiPo raw voltage, about 3.0V to 4.2V
+- USB_5V: USB input
+- 3V3: regulated sensor and ESP32 power
+
+Recommended current budget:
+- ESP32 WiFi peaks: 300 mA to 500 mA
+- Sensor modules: 50 mA to 150 mA total, depending on MAX30102 LED settings
+- Design 3.3V regulator for at least 600 mA
+- Better design target: 800 mA
+
+Recommended regulator:
+- AP2112K-3.3 for simple prototypes
+- ME6211 3.3V if low-cost and available
+- TLV755P 3.3V or similar for cleaner compact design
+- Buck regulator if battery life and heat are important
+
+Recommended charger:
+- MCP73831 LiPo charger for compact custom board
+- TP4056 module/chip for simple prototype
+
+Power components:
+- 1 x battery connector JST-PH
+- 1 x charger IC or charger module
+- 1 x 3.3V regulator
+- 1 x power switch
+- 1 x power LED with resistor
+- 10 uF capacitor at regulator input
+- 10 uF capacitor at regulator output
+- 100 nF capacitor close to ESP32 power
+- 100 nF capacitor close to each sensor connector/module
+
+Power safety:
+- Add battery polarity marking.
+- Add battery protection if the LiPo does not include a protection circuit.
+- Keep battery away from sharp PCB edges.
+- Do not wear while charging from USB during real body testing.
+
+
+10. I2C Design
+--------------
+
+Shared I2C bus:
+- SDA: GPIO21
+- SCL: GPIO22
+
+Devices:
+- MAX30102
+- MPU-9250 / MPU-6500
+- Optional expansion connector
+
+Required:
+- 4.7 kOhm pullup from SDA to 3.3V
+- 4.7 kOhm pullup from SCL to 3.3V
+
+Optional:
+- 33 Ohm to 100 Ohm series resistor on SDA
+- 33 Ohm to 100 Ohm series resistor on SCL
+
+Layout:
+- Keep SDA/SCL short.
+- Route away from ECG analog traces.
+- If sensor cable is long, use twisted GND/SDA and GND/SCL pairing if possible.
+
+
+11. ESP32 Section Options
+-------------------------
+
+Option A: ESP32 DevKit socket
+
+Pros:
+- Fastest for competition.
+- USB programming already solved.
+- Boot/reset already solved.
+- Less PCB risk.
+
+Cons:
+- Bigger and thicker.
+- Less wearable.
+
+Use this for PCB V1 if time is short.
+
+
+Option B: Bare ESP32-WROOM module
+
+Pros:
+- Smaller and more professional.
+- Better wearable shape.
+- Can integrate USB-C and charger.
+
+Cons:
+- Requires correct boot circuit.
+- Requires USB-UART circuit.
+- Requires antenna keepout.
+- More PCB layout risk.
+
+Use this for PCB V2.
+
+
+Required if using ESP32-WROOM:
+- ESP32-WROOM-32E module
+- EN pullup 10 kOhm to 3.3V
+- GPIO0 pullup 10 kOhm to 3.3V
+- BOOT button from GPIO0 to GND
+- RESET button from EN to GND
+- EN capacitor 100 nF to GND
+- USB-UART chip, such as CP2102N or CH340C
+- Auto-program transistors for EN/GPIO0 if desired
+- USB connector and ESD protection
+- Antenna keepout according to module datasheet
+
+
+12. Physical Placement
+----------------------
+
+Recommended top-side placement:
+
+ ------------------------------------------------------
+|                ESP32 ANTENNA EDGE                    |
+|   Keep copper/components away from antenna zone       |
+|                                                      |
+|  ESP32 module/socket            USB-C                |
+|                                                      |
+|  MPU sensor near board center                         |
+|                                                      |
+|  Battery connector      Power switch      Status LED |
+|                                                      |
+|  Piezo connectors along left/right/bottom edges       |
+|                                                      |
+|  AD8232 connector away from ESP32 antenna and USB     |
+|                                                      |
+ ------------------------------------------------------
+
+Placement rules:
+- Put ESP32 antenna at board edge.
+- Keep antenna side away from body/skin when possible.
+- Put MPU near the board center.
+- Put AD8232 connector on the quiet analog side.
+- Put piezo connectors near board edges for cable routing.
+- Put battery connector where it will not pull on sensor cables.
+- Put USB connector on the outside edge for easy access.
+
+
+13. Wearable Cable Routing
+--------------------------
+
+Use soft flexible wires from the central board to sensors.
+
+Recommended cable paths:
+- Right arm piezo: from board to right shoulder/arm strap
+- Left arm piezo: from board to left shoulder/arm strap
+- Right leg piezo: from board down to right thigh/leg strap
+- Left leg piezo: from board down to left thigh/leg strap
+- Chest piezo: short cable to chest patch
+- AD8232 electrodes: separate ECG electrode cables
+- MAX30102: cable to finger/ear/strap position
+
+Cable recommendations:
+- Use flexible silicone wire.
+- Add strain relief near connectors.
+- Use locking connectors.
+- Avoid running ECG cables parallel to USB or power cables.
+- Label every connector on PCB and cable.
+
+
+14. Suggested Body Mounting
+---------------------------
+
+Central board location:
+- Upper chest module
+- Shoulder/vest pocket
+- Belt module if ECG cable length is acceptable
+
+Best practical choice:
+- Chest/vest mounted central board
+
+Reasons:
+- Short cable to ECG and chest piezo.
+- Balanced cable lengths to arms and legs.
+- MPU motion data better represents torso movement.
+
+Do not put the hard PCB directly against skin.
+
+Recommended mechanical stack:
+- PCB
+- Plastic enclosure or 3D printed shell
+- Foam layer or fabric pocket
+- Strap/vest mounting
+
+
+15. Minimum Schematic Net List
+------------------------------
+
+Power nets:
+- USB_5V
+- BAT+
+- 3V3
+- GND
+
+ESP32 nets:
+- ESP32_EN
+- ESP32_BOOT_GPIO0
+- UART_TX
+- UART_RX
+- I2C_SDA_GPIO21
+- I2C_SCL_GPIO22
+
+ECG nets:
+- ECG_OUT_RAW
+- ECG_OUT_ADC_GPIO34
+- ECG_LO_PLUS_GPIO25
+- ECG_LO_MINUS_GPIO26
+
+Piezo nets:
+- PIEZO_RA_AO_RAW
+- PIEZO_RA_ADC_GPIO35
+- PIEZO_LA_AO_RAW
+- PIEZO_LA_ADC_GPIO32
+- PIEZO_RL_AO_RAW
+- PIEZO_RL_ADC_GPIO33
+- PIEZO_LL_AO_RAW
+- PIEZO_LL_ADC_GPIO36
+- PIEZO_CHEST_AO_RAW
+- PIEZO_CHEST_ADC_GPIO39
+
+I2C sensor nets:
+- MAX30102_SDA
+- MAX30102_SCL
+- MPU_SDA
+- MPU_SCL
+- MPU_INT optional
+
+GPS optional:
+- GPS_TX_TO_ESP32_RX_GPIO16
+- GPS_RX_FROM_ESP32_TX_GPIO17
+
+
+16. Recommended BOM for Wearable V1
+-----------------------------------
+
+Main:
+- 1 x ESP32 DevKit OR ESP32-WROOM-32E
+- 1 x custom carrier PCB
+
+Power:
+- 1 x LiPo battery connector JST-PH 2-pin
+- 1 x 3.3V regulator, 600 mA minimum
+- 1 x power switch
+- 1 x power LED
+- 1 x 330 Ohm to 1 kOhm LED resistor
+- 2 x 10 uF capacitors
+- 8 to 12 x 100 nF capacitors
+
+Charging:
+- 1 x MCP73831 charger circuit OR TP4056 charger module connection
+- 1 x charging LED and resistor if using charger IC
+
+Sensors:
+- 5 x analog piezo vibration modules
+- 1 x AD8232 ECG module
+- 1 x GY-MAX30102 module
+- 1 x MPU-9250 / MPU-6500 module
+
+Protection/filtering:
+- 6 x 1 kOhm series resistors for analog lines
+- 5 x 1 MOhm piezo pulldown resistors
+- 6 x 10 nF to 100 nF analog filter capacitors
+- 2 x 4.7 kOhm I2C pullup resistors
+- Optional USB ESD protection
+- Optional connector TVS protection
+
+Connectors:
+- 5 x 3-pin JST connectors for piezo sensors
+- 1 x 6-pin JST connector for AD8232
+- 2 x 4-pin or 5-pin JST connectors for I2C sensors
+- 1 x USB connector if not using DevKit USB
+- Optional 1 x 4-pin GPS connector
+
+Mechanical:
+- 4 x mounting holes
+- 1 x enclosure or fabric pocket
+- Cable labels
+- Strain relief
+
+
+17. PCB Layer Recommendation
+----------------------------
+
+Low-cost V1:
+- 2 layers
+- Top: signals/components
+- Bottom: mostly GND pour
+
+Better wearable V2:
+- 4 layers
+- Layer 1: components/signals
+- Layer 2: solid GND plane
+- Layer 3: 3.3V/power
+- Layer 4: signals
+
+4-layer is better for:
+- ECG noise reduction
+- WiFi stability
+- cleaner I2C and ADC readings
+- smaller routing area
+
+
+18. Silkscreen Labels
+---------------------
+
+Add these labels clearly:
+
+Board:
+- TWIN-MEDIC WEARABLE PCB V1
+- 3.3V ONLY SENSOR OUTPUTS
+- DO NOT CONNECT 5V AO TO ESP32 ADC
+
+Connectors:
+- PIEZO RIGHT ARM GPIO35
+- PIEZO LEFT ARM GPIO32
+- PIEZO RIGHT LEG GPIO33
+- PIEZO LEFT LEG GPIO36
+- PIEZO CHEST GPIO39
+- AD8232 ECG GPIO34 / LO+25 / LO-26
+- MAX30102 I2C SDA21 SCL22
+- MPU I2C SDA21 SCL22
+- BAT + -
+- USB 5V
+
+Orientation:
+- TOP
+- BODY SIDE
+- ANTENNA KEEP CLEAR
+
+
+19. Wearable Safety Notes
+-------------------------
+
+Important:
+- This is a prototype wearable board, not a certified medical device.
+- Do not use for real diagnosis or treatment decisions.
+- ECG/body-connected circuits require extra safety.
+- Prefer battery operation during body testing.
+- Do not connect a person to ECG electrodes while the board is plugged into an unsafe USB power source.
+- Add enclosure and insulation before wearing.
+- Keep battery mechanically protected.
+- Do not allow bare solder joints to touch skin.
+- Avoid sharp PCB corners.
+
+
+20. Development Steps
+---------------------
+
+Step 1:
+Build the schematic in KiCad/EasyEDA using this connector and pin map.
+
+Step 2:
+Place ESP32 first, with antenna on board edge.
+
+Step 3:
+Place power circuit near USB/battery edge.
+
+Step 4:
+Place MPU near the center of the board.
+
+Step 5:
+Place AD8232 connector away from ESP32 antenna, USB, and regulator.
+
+Step 6:
+Place piezo connectors around the board edges.
+
+Step 7:
+Route analog inputs with 1 kOhm series resistors and pulldown/filter components.
+
+Step 8:
+Route I2C with 4.7 kOhm pullups.
+
+Step 9:
+Pour GND plane.
+
+Step 10:
+Run DRC/ERC.
+
+Step 11:
+Order 2-layer prototype first.
+
+Step 12:
+Test only power first, then ESP32 boot, then each sensor one by one.
+
+
+21. Test Plan After PCB Assembly
+--------------------------------
+
+Before plugging sensors:
+- Check 3.3V rail with multimeter.
+- Check GND continuity.
+- Check no short between 3.3V and GND.
+- Check battery polarity.
+
+ESP32:
+- Upload blink/serial test.
+- Upload Twin-Medic firmware.
+- Confirm WiFi connection.
+- Confirm dashboard receives packets.
+
+I2C:
+- Run I2C scanner.
+- Confirm MAX30102 address.
+- Confirm MPU address.
+
+Piezo:
+- Connect one piezo at a time.
+- Run "piezo zero" in Serial Monitor.
+- Check piezoRaw and piezoDelta.
+- Test GPIO35, GPIO32, GPIO33, GPIO36, GPIO39.
+
+ECG:
+- Test AD8232 output without body first.
+- Confirm leadOff changes when electrodes are disconnected.
+- Confirm ECG is not stuck at 0 or 4095.
+
+Wear test:
+- Use battery only.
+- Place board inside insulated enclosure.
+- Check cables do not pull sensors.
+- Confirm dashboard data remains stable while moving.
+
+
+22. Final Recommendation
+------------------------
+
+Build V1 as a wearable carrier PCB with sensor connectors and ESP32 DevKit socket.
+
+After V1 works:
+- Replace ESP32 DevKit with ESP32-WROOM module.
+- Integrate USB-C, charger, and regulator.
+- Make board smaller.
+- Consider flexible PCB or rigid-flex for final wearable version.
+
+Do not integrate bare ECG or optical MAX30102 chips until the connector-module version works reliably.
+

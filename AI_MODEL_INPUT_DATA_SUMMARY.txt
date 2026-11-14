@@ -1,0 +1,679 @@
+TWIN-MEDIC AI MODEL INPUT DATA SUMMARY
+=====================================
+
+Purpose
+-------
+This file summarizes the input data types and essential information needed to build an intelligent model for the Twin-Medic ESP32 dashboard.
+
+The model goal is to fuse data from:
+- 5 analog piezo vibration sensors
+- AD8232 ECG module
+- GY-MAX30102 pulse oximeter
+- MPU-9250 / MPU-6500 IMU
+- Optional GPS / browser location
+- Patient profile data
+
+The model can be used for:
+- Impact detection
+- Impact zone classification
+- Vital sign anomaly detection
+- Risk scoring
+- Medical/tactical recommendation support
+
+
+1. Main Data Source
+-------------------
+The ESP32 sends JSON telemetry to:
+
+POST /api/telemetry
+
+The dashboard also receives the same telemetry through:
+
+GET /api/stream
+GET /api/status
+
+Each telemetry packet represents one time step. The current firmware posts one packet about every 1 second.
+Inside each packet, the ECG can include a short waveform array named ecgWave.
+
+
+2. Sensor Input Fields and Data Types
+-------------------------------------
+
+A. Metadata
+
+Field: deviceId
+Type: string
+Example: "twin-medic-esp32"
+Meaning: Unique ESP32 device name.
+
+Field: board
+Type: string
+Example: "ESP32"
+Meaning: Board/platform name.
+
+Field: timestamp
+Type: string, ISO datetime
+Example: "2026-06-07T13:55:20.000Z"
+Meaning: Packet time.
+
+Field: packets
+Type: integer
+Example: 825
+Meaning: Packet counter from ESP32.
+
+Field: signal
+Type: number
+Unit: dBm RSSI
+Example: -45
+Meaning: WiFi signal strength.
+
+Field: battery
+Type: number
+Range: 0 to 100
+Unit: percent
+Meaning: Battery estimate.
+
+Field: loss
+Type: number
+Unit: percent
+Meaning: Packet loss estimate.
+
+
+B. AD8232 ECG Inputs
+
+Hardware:
+- AD8232 OUT on GPIO34
+- AD8232 LO+ on GPIO25
+- AD8232 LO- on GPIO26
+
+Field: ecg
+Type: integer
+Range: 0 to 4095
+Unit: ESP32 ADC value
+Meaning: Latest ECG analog sample.
+
+Field: ecgWave
+Type: array of integers
+Range per value: 0 to 4095
+Example: [2010, 2032, 2100, 2350, 2200]
+Meaning: Recent ECG samples collected at higher frequency before the 1 Hz telemetry post.
+Use this field for ECG curve display and waveform features.
+
+Field: leadOff
+Type: boolean
+Example: true or false
+Meaning: True means ECG electrodes are disconnected or signal is not reliable.
+
+Field: bpm
+Type: number
+Unit: beats per minute
+Meaning: Selected heart rate. It can come from optical MAX30102 if available, otherwise ECG.
+
+Field: bpmEcg
+Type: number
+Unit: beats per minute
+Meaning: Heart rate estimated from AD8232 ECG peaks.
+
+Essential ECG notes:
+- If ecg is always 4095, the analog input is saturated. Check AD8232 wiring, voltage, electrodes, and GND.
+- If leadOff is true, do not trust ecg or bpmEcg.
+- For an AI model, use ECG only when leadOff is false.
+
+
+C. GY-MAX30102 Inputs
+
+Hardware:
+- I2C SDA on GPIO21
+- I2C SCL on GPIO22
+
+Field: spo2
+Type: number
+Unit: percent
+Typical range: 0 to 100
+Meaning: Estimated oxygen saturation.
+
+Field: temp
+Type: number
+Unit: Celsius
+Meaning: MAX30102 module temperature.
+
+Field: max30102.ir
+Type: integer
+Meaning: Infrared light sensor value. Useful for finger/contact detection and pulse waveform.
+
+Field: max30102.red
+Type: integer
+Meaning: Red light sensor value. Used with IR for SpO2 estimation.
+
+Field: max30102.fingerDetected
+Type: boolean
+Meaning: True if a finger/body contact is detected.
+
+Field: max30102.bpm
+Type: number
+Unit: beats per minute
+Meaning: Heart rate estimated from MAX30102.
+
+Field: max30102.spo2
+Type: number
+Unit: percent
+Meaning: SpO2 estimate from MAX30102.
+
+Field: max30102.temperature
+Type: number
+Unit: Celsius
+Meaning: Temperature from MAX30102 module.
+
+Essential MAX30102 notes:
+- If ir is 0 or very low, finger/contact is probably missing.
+- If fingerDetected is false, do not trust optical bpm or spo2.
+- SpO2 calculation in this prototype is not medically validated.
+
+
+D. MPU-9250 / MPU-6500 Motion Inputs
+
+Hardware:
+- I2C SDA on GPIO21
+- I2C SCL on GPIO22
+
+Field: motion.accel.x
+Type: number
+Unit: g
+Meaning: Acceleration X axis.
+
+Field: motion.accel.y
+Type: number
+Unit: g
+Meaning: Acceleration Y axis.
+
+Field: motion.accel.z
+Type: number
+Unit: g
+Meaning: Acceleration Z axis.
+
+Field: motion.gyro.x
+Type: number
+Unit: degrees per second
+Meaning: Gyroscope X axis.
+
+Field: motion.gyro.y
+Type: number
+Unit: degrees per second
+Meaning: Gyroscope Y axis.
+
+Field: motion.gyro.z
+Type: number
+Unit: degrees per second
+Meaning: Gyroscope Z axis.
+
+Field: motion.accelMagnitude
+Type: number
+Unit: g
+Meaning: Total acceleration magnitude.
+
+Field: motion.gyroMagnitude
+Type: number
+Unit: degrees per second
+Meaning: Total rotation magnitude.
+
+Essential motion notes:
+- Motion helps distinguish real body movement from sensor noise.
+- Strong piezo plus strong acceleration is stronger evidence of an impact.
+- Strong motion without piezo may be normal movement.
+
+
+E. Piezo Vibration Inputs
+
+Hardware:
+- rightArm: GPIO35
+- leftArm: GPIO32
+- rightLeg: GPIO33
+- leftLeg: GPIO36
+- chest: GPIO39
+
+Field: piezo.rightArm
+Type: integer
+Range: 0 to 100
+Unit: percent intensity
+Meaning: Calibrated impact intensity for right arm.
+
+Field: piezo.leftArm
+Type: integer
+Range: 0 to 100
+Unit: percent intensity
+Meaning: Calibrated impact intensity for left arm.
+
+Field: piezo.rightLeg
+Type: integer
+Range: 0 to 100
+Unit: percent intensity
+Meaning: Calibrated impact intensity for right leg/foot.
+
+Field: piezo.leftLeg
+Type: integer
+Range: 0 to 100
+Unit: percent intensity
+Meaning: Calibrated impact intensity for left leg/foot.
+
+Field: piezo.chest
+Type: integer
+Range: 0 to 100
+Unit: percent intensity
+Meaning: Calibrated impact intensity for chest.
+
+Field: piezo.rightArmHit
+Type: boolean
+Meaning: True if right arm intensity passes threshold.
+
+Field: piezo.leftArmHit
+Type: boolean
+Meaning: True if left arm intensity passes threshold.
+
+Field: piezo.rightLegHit
+Type: boolean
+Meaning: True if right leg intensity passes threshold.
+
+Field: piezo.leftLegHit
+Type: boolean
+Meaning: True if left leg intensity passes threshold.
+
+Field: piezo.chestHit
+Type: boolean
+Meaning: True if chest intensity passes threshold.
+
+Field: piezoRaw.rightArm, piezoRaw.leftArm, piezoRaw.rightLeg, piezoRaw.leftLeg, piezoRaw.chest
+Type: integer
+Range: 0 to 4095
+Unit: raw ADC value
+Meaning: Raw analog value from each piezo module.
+
+Field: piezoDelta.rightArm, piezoDelta.leftArm, piezoDelta.rightLeg, piezoDelta.leftLeg, piezoDelta.chest
+Type: integer
+Range: 0 to 4095
+Unit: ADC delta
+Meaning: Difference between current raw value and calibrated idle baseline.
+This is often the best raw feature for an AI model.
+
+Field: piezoCalibration.threshold
+Type: integer
+Unit: percent
+Meaning: Impact threshold used by firmware.
+
+Field: piezoCalibration.<zone>.idle
+Type: integer
+Range: 0 to 4095
+Meaning: Idle baseline raw ADC value for that piezo.
+
+Field: piezoCalibration.<zone>.noise
+Type: integer
+Meaning: Noise floor ignored before scaling.
+
+Field: piezoCalibration.<zone>.scale
+Type: integer
+Meaning: Delta value that maps to strong impact.
+
+Field: piezoCalibration.<zone>.gain
+Type: number
+Meaning: Sensitivity multiplier.
+
+Essential piezo notes:
+- For model input, prefer piezoDelta plus calibrated intensity.
+- piezoRaw can be unstable if the module output floats.
+- GPIO36 and GPIO39 are input-only ADC pins and have no internal pullup/pulldown.
+- The piezo modules must use AO analog output, not DO digital output.
+- The modules should be powered with 3.3V when connected to ESP32 ADC pins.
+
+
+F. GPS / Location Inputs
+
+Field: gps.latitude
+Type: number
+Unit: degrees
+Meaning: Latitude from ESP32 GPS or browser location.
+
+Field: gps.longitude
+Type: number
+Unit: degrees
+Meaning: Longitude from ESP32 GPS or browser location.
+
+Field: gps.altitude
+Type: number
+Unit: meters
+Meaning: Altitude if available.
+
+Field: gps.speedKmph
+Type: number
+Unit: km/h
+Meaning: Movement speed.
+
+Field: gps.satellites
+Type: integer
+Meaning: Number of satellites if using GPS module.
+
+Field: gps.hdop
+Type: number
+Meaning: GPS precision indicator. Lower is better.
+
+Field: gps.valid
+Type: boolean
+Meaning: True if GPS coordinates are valid.
+
+Essential GPS notes:
+- GPS is useful for context and evacuation workflow.
+- GPS should not be the main input for impact/vital anomaly classification.
+
+
+G. Patient Profile Inputs
+
+Field: patient.id
+Type: string
+Meaning: Patient identifier.
+
+Field: patient.nfcId
+Type: string
+Meaning: NFC card/tag identifier.
+
+Field: patient.firstName
+Type: string
+
+Field: patient.lastName
+Type: string
+
+Field: patient.heightCm
+Type: number or numeric string
+Unit: cm
+
+Field: patient.weightKg
+Type: number or numeric string
+Unit: kg
+
+Field: patient.bloodType
+Type: string
+Example: "O+"
+
+Field: patient.diseases
+Type: string
+Meaning: Known conditions, allergies, risk factors.
+
+Field: patient.lastConsultation
+Type: string date
+
+Field: patient.careResult
+Type: string
+Meaning: Last care notes.
+
+Essential patient notes:
+- Patient profile helps personalize risk but should be optional.
+- Use height and weight to compute BMI.
+- Use diseases/allergies as contextual features or rules, not as direct sensor labels.
+
+
+3. Recommended Model Features
+-----------------------------
+
+For each telemetry packet, compute:
+
+Piezo features:
+- maxPiezoIntensity
+- maxPiezoDelta
+- strongestPiezoZone
+- numberOfHitZones
+- chestImpactFlag
+- limbImpactFlag
+- legImpactFlag
+- piezoDelta per zone
+- piezoIntensity per zone
+
+ECG features:
+- ecgCurrent
+- ecgWave mean
+- ecgWave min
+- ecgWave max
+- ecgWave peak-to-peak amplitude
+- ecgWave standard deviation
+- bpmEcg
+- leadOff flag
+
+MAX30102 features:
+- opticalBpm
+- spo2
+- ir
+- red
+- fingerDetected flag
+- temp
+
+Motion features:
+- accelMagnitude
+- gyroMagnitude
+- accel x/y/z
+- gyro x/y/z
+- motionSpike flag
+
+Combined features:
+- maxPiezoDelta + accelMagnitude
+- maxPiezoDelta + gyroMagnitude
+- piezo hit + heart rise
+- piezo hit + SpO2 drop
+- chest piezo hit + abnormal respiration/SpO2
+
+Patient features:
+- age if available
+- BMI if height and weight are available
+- known disease flags
+- allergy or special condition flags
+
+Signal quality features:
+- leadOff
+- fingerDetected
+- WiFi signal
+- packet loss
+- missing sensor flags
+
+
+4. Suggested Output Labels
+--------------------------
+
+The intelligent model can predict one or more of these outputs:
+
+Output: impactDetected
+Type: boolean
+Meaning: True if an impact is detected.
+
+Output: impactZone
+Type: categorical string
+Classes:
+- none
+- rightArm
+- leftArm
+- rightLeg
+- leftLeg
+- chest
+- multiple
+
+Output: impactSeverity
+Type: categorical string or number
+Classes:
+- none
+- light
+- moderate
+- severe
+
+Output: vitalAnomaly
+Type: boolean
+Meaning: True if heart rate, SpO2, respiration, or temperature are abnormal.
+
+Output: riskScore
+Type: number
+Range: 0 to 100
+Meaning: Overall risk score.
+
+Output: recommendationClass
+Type: categorical string
+Example classes:
+- continue_monitoring
+- check_sensor_contact
+- check_bleeding
+- immobilize_limb
+- chest_assessment
+- prepare_evacuation
+
+
+5. Minimum Training Dataset Format
+----------------------------------
+
+Each training row should contain:
+
+- timestamp
+- patientId
+- deviceId
+- all sensor values from one packet
+- computed features
+- manual label from human expert or experiment
+
+Example CSV columns:
+
+timestamp,patientId,ecg,bpm,bpmEcg,leadOff,spo2,ir,red,fingerDetected,temp,accelMagnitude,gyroMagnitude,piezoRightArm,piezoLeftArm,piezoRightLeg,piezoLeftLeg,piezoChest,piezoDeltaRightArm,piezoDeltaLeftArm,piezoDeltaRightLeg,piezoDeltaLeftLeg,piezoDeltaChest,maxPiezoDelta,strongestPiezoZone,impactDetected,impactZone,impactSeverity,riskScore,recommendationClass
+
+
+6. Example JSON Packet
+----------------------
+
+{
+  "deviceId": "twin-medic-esp32",
+  "board": "ESP32",
+  "packets": 825,
+  "ecg": 2818,
+  "ecgWave": [2790, 2801, 2818, 2832, 2805],
+  "leadOff": false,
+  "bpm": 92.0,
+  "bpmEcg": 91.5,
+  "bpmOptical": 0,
+  "spo2": 97.0,
+  "temp": 36.8,
+  "max30102": {
+    "ir": 51000,
+    "red": 47000,
+    "fingerDetected": true,
+    "bpm": 92.0,
+    "spo2": 97.0,
+    "temperature": 36.8
+  },
+  "motion": {
+    "accel": { "x": 0.01, "y": 0.02, "z": 1.00 },
+    "gyro": { "x": 0.2, "y": 0.1, "z": 0.4 },
+    "accelMagnitude": 1.00,
+    "gyroMagnitude": 0.5
+  },
+  "piezo": {
+    "rightArm": 100,
+    "leftArm": 12,
+    "rightLeg": 8,
+    "leftLeg": 0,
+    "chest": 20,
+    "rightArmHit": true,
+    "leftArmHit": false,
+    "rightLegHit": false,
+    "leftLegHit": false,
+    "chestHit": false
+  },
+  "piezoRaw": {
+    "rightArm": 2800,
+    "leftArm": 2100,
+    "rightLeg": 2050,
+    "leftLeg": 2048,
+    "chest": 2200
+  },
+  "piezoDelta": {
+    "rightArm": 882,
+    "leftArm": 74,
+    "rightLeg": 52,
+    "leftLeg": 8,
+    "chest": 197
+  },
+  "piezoCalibration": {
+    "threshold": 20,
+    "rightArm": { "idle": 2048, "noise": 2, "scale": 350, "gain": 3.0 }
+  },
+  "battery": 100,
+  "signal": -45
+}
+
+
+7. Preprocessing Rules
+----------------------
+
+Before sending data to the model:
+
+1. Convert all numeric strings to numbers.
+2. Replace missing values with 0 only when 0 is a valid safe fallback.
+3. Keep missing sensor flags separately.
+4. Ignore ECG features when leadOff is true.
+5. Ignore optical BPM/SpO2 when fingerDetected is false.
+6. Normalize ADC values from 0 to 4095 into 0.0 to 1.0 if using ML.
+7. Normalize piezo intensities from 0 to 100 into 0.0 to 1.0.
+8. Use rolling windows, for example last 5 to 30 seconds, for temporal features.
+9. Smooth noisy values with moving average or median filter.
+10. Keep raw values for debugging and calibrated values for model input.
+
+
+8. Recommended Model Approaches
+-------------------------------
+
+Prototype model:
+- Rule-based scoring
+- Good for demo and safety because it is explainable
+
+Classical ML model:
+- Random Forest
+- Gradient Boosting
+- Logistic Regression for simple risk classification
+- Good when you have labeled CSV rows
+
+Time-series model:
+- 1D CNN, LSTM, GRU, or Transformer
+- Useful for ECG waveform and multi-second sensor windows
+- Requires more labeled data
+
+Hybrid model:
+- Rules for sensor validity and emergency thresholds
+- ML model for final risk score and zone/severity classification
+
+
+9. Essential Labels Needed for Real AI Training
+-----------------------------------------------
+
+To train a real model, you need labeled examples:
+
+- normal/no impact
+- light vibration
+- real impact right arm
+- real impact left arm
+- real impact right leg
+- real impact left leg
+- real impact chest
+- movement without impact
+- bad sensor contact
+- ECG lead-off
+- MAX30102 no finger/contact
+- high heart rate without impact
+- low SpO2 without impact
+
+Each example should include:
+- exact sensor values
+- time window before and after event
+- true label
+- notes about what physically happened
+- sensor placement/cabling notes
+
+
+10. Important Safety Note
+-------------------------
+
+This project is a prototype. The AI model must not be treated as a validated medical diagnostic system unless it is trained, tested, and clinically validated with appropriate medical supervision.
+
+Use the model output as decision support only:
+- detect possible impact
+- highlight abnormal signals
+- guide the operator to check the patient
+- provide explainable recommendations
+

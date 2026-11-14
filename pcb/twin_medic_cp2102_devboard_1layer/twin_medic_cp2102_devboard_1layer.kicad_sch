@@ -1,0 +1,89 @@
+(kicad_sch
+	(version 20250114)
+	(generator "codex")
+	(generator_version "1.0")
+	(uuid "740c65a1-c3cf-40ca-8bac-8d81dcea1743")
+	(paper "A4")
+	(title_block
+		(title "Twin-Medic CP2102 DevBoard 1-Layer Carrier")
+		(date "2026-06-07")
+		(rev "V3-CP2102-1L")
+	)
+	(lib_symbols)
+	(text "TWIN-MEDIC ESP32-WROOM-32 CP2102 DEVELOPMENT BOARD CARRIER"
+		(exclude_from_sim no)
+		(at 18 25 0)
+		(effects
+			(font (size 1.45 1.45))
+			(justify left bottom)
+		)
+		(uuid "43b920bc-63b9-4052-9a40-130bcc76d461")
+	)
+	(text "Target: common 30-pin ESP32 DevKit V1 / ESP32-WROOM-32 CP2102 board."
+		(exclude_from_sim no)
+		(at 18 34 0)
+		(effects
+			(font (size 1.1 1.1))
+			(justify left bottom)
+		)
+		(uuid "6d274154-eb6b-4cf7-86b2-e152c9df5d5b")
+	)
+	(text "This is a 1-layer carrier/shield PCB: the CP2102 board plugs into two 15-pin female socket rows."
+		(exclude_from_sim no)
+		(at 18 42 0)
+		(effects
+			(font (size 1.1 1.1))
+			(justify left bottom)
+		)
+		(uuid "0248f95a-ed33-4656-86e2-34726880dd4e")
+	)
+	(text "No filter resistors/capacitors are used, per request. Sensor AO lines go directly to ESP32 ADC pins."
+		(exclude_from_sim no)
+		(at 18 50 0)
+		(effects
+			(font (size 1.1 1.1))
+			(justify left bottom)
+		)
+		(uuid "05ae0453-8a81-4856-8c9d-c1df4ed0b005")
+	)
+	(text "Piezo: RA=GPIO35, LA=GPIO32, RL=GPIO33, LL=GPIO36, CHEST=GPIO39."
+		(exclude_from_sim no)
+		(at 18 58 0)
+		(effects
+			(font (size 1.1 1.1))
+			(justify left bottom)
+		)
+		(uuid "73cf2539-9eb0-416c-b75a-4447d4acc1a5")
+	)
+	(text "AD8232: OUT=GPIO34, LO+=GPIO25, LO-=GPIO26."
+		(exclude_from_sim no)
+		(at 18 66 0)
+		(effects
+			(font (size 1.1 1.1))
+			(justify left bottom)
+		)
+		(uuid "a90a2e2b-c990-4043-865e-da47b54cb83a")
+	)
+	(text "I2C: MAX30102 + MPU on SDA=GPIO21 and SCL=GPIO22."
+		(exclude_from_sim no)
+		(at 18 74 0)
+		(effects
+			(font (size 1.1 1.1))
+			(justify left bottom)
+		)
+		(uuid "cb648e47-9c12-479d-b2d1-62f93bb70679")
+	)
+	(text "Before fabrication: compare U1L/U1R pin order with your exact CP2102 board silkscreen."
+		(exclude_from_sim no)
+		(at 18 82 0)
+		(effects
+			(font (size 1.1 1.1))
+			(justify left bottom)
+		)
+		(uuid "fa8f339e-fe85-460c-a31b-edf01b4b1b25")
+	)
+	(sheet_instances
+		(path "/" (page "1"))
+	)
+	(embedded_fonts no)
+)

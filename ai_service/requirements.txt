@@ -1,0 +1,12 @@
+# Minimal demo service uses only Python standard library.
+# Install the optional packages below when you want real model adapters.
+#
+# fastapi
+# uvicorn
+# numpy
+# pandas
+# scikit-learn
+# torch
+# transformers
+# tabpfn
+# chronos-forecasting

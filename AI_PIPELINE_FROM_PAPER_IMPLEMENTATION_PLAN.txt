@@ -1,0 +1,726 @@
+TWIN-MEDIC AI PIPELINE FROM THE REVIEWED PAPER
+==============================================
+
+Source reviewed:
+- Powerful Multi-Model Architecture for Outcome Prediction and Persuasive Intervention.pdf
+- Extracted text file in this workspace: paper_extracted.txt
+
+Purpose of this file:
+- Convert the paper into a concrete implementation pipeline for the current Twin-Medic ESP32 dashboard project.
+- Define dependencies.
+- Define code changes.
+- Define expected outputs/results.
+
+
+1. Short Review of the Paper
+----------------------------
+
+The paper recommends a modular, sensor-first, multi-model architecture instead of one large monolithic AI model.
+
+The important idea is:
+
+1. Collect streaming telemetry from sensors.
+2. Check signal quality and missing values.
+3. Convert raw sensor packets into model features.
+4. Use a prediction model to estimate:
+   - impact detection
+   - impact zone
+   - severity
+   - vital sign risk
+   - time-to-emergency / deterioration risk
+5. Use a separate intervention policy module to choose safe recommendations.
+6. Show uncertainty/confidence and allow the system to abstain when data is bad.
+7. Log outcomes, recommendations, and user responses for future model improvement.
+
+The paper's best recommendation for this project:
+- Do not start with a huge LLM or vision-language model.
+- Start with time-series sensor data + patient profile data.
+- Use hybrid fusion:
+  - early fusion for aligned sensor streams like ECG, piezo, MAX30102, IMU
+  - late fusion for patient profile, GPS, optional future text/audio/image
+- Keep recommendation generation separate from prediction.
+
+
+2. What This Means for Twin-Medic
+---------------------------------
+
+Current Twin-Medic data already fits the paper:
+
+Sensors:
+- 5 piezo vibration sensors
+- AD8232 ECG
+- MAX30102 SpO2 / pulse
+- MPU-9250 / MPU-6500 gyro + accelerometer
+- optional GPS/browser location
+- patient NFC/profile data
+
+Current outputs:
+- risk score
+- impact detection
+- impact zone
+- recommendation text
+- dashboard alerts
+
+The project already has a simple rule-based AI file:
+- src/MODELE_IA.js
+
+The next step is not replacing it immediately.
+The next step is making the AI pipeline trainable and auditable.
+
+
+3. Recommended Implementation Pipeline
+--------------------------------------
+
+PHASE 1 - Data Ingestion and Logging
+
+Goal:
+Store every ESP32 telemetry packet so you can train and evaluate models later.
+
+Pipeline:
+
+ESP32 sensors
+-> firmware JSON telemetry
+-> Node API /api/telemetry
+-> telemetry normalizer
+-> JSONL or SQLite storage
+-> dashboard live stream
+
+Add:
+- packet timestamp
+- deviceId
+- sessionId
+- firmwareVersion
+- raw telemetry
+- normalized telemetry
+- sensor quality flags
+
+Files to change:
+- firmware/twin_medic_esp32/twin_medic_esp32.ino
+- server/index.js
+
+New files to add:
+- server/storage.js
+- data/telemetry.jsonl or data/twin_medic.sqlite
+
+
+PHASE 2 - Signal Quality Layer
+
+Goal:
+Before prediction, decide if each sensor is reliable.
+
+Quality checks:
+
+ECG:
+- leadOff must be false
+- ecg must not be stuck at 0 or 4095
+- ecgWave must have real variation
+
+MAX30102:
+- fingerDetected should be true
+- IR should be above contact threshold
+- SpO2 should be between realistic bounds
+
+Piezo:
+- piezoDelta should not be permanently zero
+- piezoRaw should not be permanently 0 or 4095
+- GPIO36/GPIO39 may float if no pulldown, so mark them lower confidence if unstable
+
+MPU:
+- accelMagnitude should not be impossible
+- gyroMagnitude should be finite
+
+Output:
+
+quality: {
+  ecgOk: true,
+  max30102Ok: true,
+  piezoOk: true,
+  motionOk: true,
+  missingSensors: [],
+  warnings: []
+}
+
+Files to change:
+- server/index.js
+- src/MODELE_IA.js
+
+Possible new file:
+- src/ai/signalQuality.js
+
+
+PHASE 3 - Feature Extraction
+
+Goal:
+Transform raw packets into model-ready numeric features.
+
+Features to compute:
+
+Piezo:
+- maxPiezoIntensity
+- maxPiezoDelta
+- strongestPiezoZone
+- numberOfHitZones
+- chestImpactFlag
+- limbImpactFlag
+- legImpactFlag
+- piezoDeltaRightArm
+- piezoDeltaLeftArm
+- piezoDeltaRightLeg
+- piezoDeltaLeftLeg
+- piezoDeltaChest
+
+ECG:
+- bpmEcg
+- ecgCurrent
+- ecgWaveMin
+- ecgWaveMax
+- ecgWaveMean
+- ecgWaveStd
+- ecgPeakToPeak
+- leadOff
+
+MAX30102:
+- bpmOptical
+- spo2
+- ir
+- red
+- fingerDetected
+- temperature
+
+Motion:
+- accelMagnitude
+- gyroMagnitude
+- accelX/Y/Z
+- gyroX/Y/Z
+- motionSpikeFlag
+
+Patient:
+- BMI if height and weight exist
+- chronic disease flags
+- allergy flags
+- blood type
+
+Quality:
+- packetLoss
+- wifiSignal
+- missing sensor count
+
+Files to add:
+- src/ai/featureExtractor.js
+- ml/features.py later if using Python training
+
+
+PHASE 4 - Baseline Prediction Model
+
+Goal:
+Improve the current rule model before using heavy AI.
+
+Use:
+- current src/MODELE_IA.js
+- better feature extraction
+- explicit confidence
+- explicit abstention
+
+Outputs:
+
+prediction: {
+  impactDetected: boolean,
+  impactZone: "none" | "rightArm" | "leftArm" | "rightLeg" | "leftLeg" | "chest" | "multiple",
+  impactSeverity: "none" | "light" | "moderate" | "severe",
+  vitalAnomaly: boolean,
+  riskScore: number,
+  confidence: number,
+  abstain: boolean,
+  explanation: string
+}
+
+Files to change:
+- src/MODELE_IA.js
+- src/App.jsx
+
+
+PHASE 5 - Labeling Interface
+
+Goal:
+Create real training labels.
+
+Add a dashboard panel/button to label events:
+
+Labels:
+- normal
+- light vibration
+- movement without impact
+- bad sensor contact
+- ECG lead-off
+- MAX30102 no finger
+- impact right arm
+- impact left arm
+- impact right leg
+- impact left leg
+- impact chest
+- multiple impacts
+
+Each label should store:
+- timestamp
+- sessionId
+- last 5 to 15 seconds of telemetry
+- selected label
+- operator note
+
+New API:
+- POST /api/labels
+- GET /api/labels
+
+Files to change:
+- server/index.js
+- src/App.jsx
+
+New files:
+- server/labels.js
+- data/labels.jsonl
+
+
+PHASE 6 - Classical ML Training
+
+Goal:
+Train a first real model from collected labels.
+
+Recommended first models:
+- Logistic Regression
+- Random Forest
+- XGBoost or LightGBM if available
+- small MLP only after baseline
+
+Why:
+- Easier to explain
+- Works with small datasets
+- Faster than deep learning
+- Good baseline before MOMENT/Transformer
+
+Training targets:
+- impactDetected
+- impactZone
+- impactSeverity
+- riskScore
+
+Model artifacts:
+- ml/models/impact_detector.joblib
+- ml/models/impact_zone.joblib
+- ml/models/severity_model.joblib
+- ml/metrics/report.json
+
+New folder:
+- ml/
+
+New files:
+- ml/build_dataset.py
+- ml/train_baseline.py
+- ml/evaluate.py
+- ml/infer.py
+
+
+PHASE 7 - AI Inference Service
+
+Goal:
+Use trained Python model from Node/dashboard.
+
+Recommended architecture:
+
+Node server receives telemetry
+-> feature extraction
+-> sends features to Python FastAPI model service
+-> receives prediction
+-> broadcasts prediction to dashboard
+
+New service:
+- ml/api.py
+
+New endpoint:
+- POST http://127.0.0.1:8890/predict
+
+Node endpoint:
+- POST /api/predict
+
+Files to change:
+- server/index.js
+- src/App.jsx
+
+
+PHASE 8 - Policy and Recommendation Module
+
+Goal:
+Separate prediction from recommendation.
+
+Do not let a chatbot invent medical advice.
+Use a structured action policy.
+
+Action schema:
+
+{
+  actionType: "monitor" | "check_sensor" | "check_bleeding" | "immobilize" | "chest_assessment" | "evacuate",
+  targetOutcome: "reduce_risk",
+  urgency: "low" | "medium" | "high" | "critical",
+  messageTemplateId: "impact_limb_01",
+  contraindications: [],
+  humanEscalationRequired: true,
+  confidenceRequired: 70
+}
+
+Recommendation output:
+
+{
+  allowed: true,
+  actionType: "check_bleeding",
+  urgency: "high",
+  message: "Impact detected on right leg. Check bleeding and monitor SpO2/cardio.",
+  reason: "Piezo right leg high + heart rise",
+  requiresHumanReview: true
+}
+
+Files to add:
+- src/ai/interventionPolicy.js
+- src/ai/actionTemplates.js
+
+Files to change:
+- src/MODELE_IA.js
+- src/App.jsx
+
+
+PHASE 9 - Optional Time-Series Foundation Model
+
+Goal:
+Add stronger model later, only after data exists.
+
+Recommended from the paper:
+- MOMENT-like time-series encoder for sensor windows
+- TabPFN/TransTab-like model for patient profile
+- hybrid fusion layer
+
+Do not do this first.
+Do it after:
+- telemetry logging works
+- labels exist
+- baseline model is measured
+
+Possible input window:
+- last 5 seconds
+- last 10 seconds
+- last 30 seconds
+
+Window tensor:
+- ecgWave
+- piezoDelta per zone
+- bpm
+- spo2
+- ir
+- accelMagnitude
+- gyroMagnitude
+
+Output:
+- better impact detection
+- severity classification
+- time-to-emergency/risk trajectory
+
+
+4. Dependencies
+---------------
+
+Current project dependencies:
+- Node.js
+- React
+- Vite
+- lucide-react
+
+No extra dependency is required for the current rule-based IA.
+
+
+Recommended Node dependencies for Phase 1-5:
+
+npm packages:
+- zod
+- better-sqlite3 OR keep JSONL with built-in fs
+- nanoid
+- csv-stringify optional
+
+Use zod for telemetry schema validation.
+Use better-sqlite3 if you want reliable local storage.
+Use JSONL first if you want simplest implementation.
+
+Recommended install:
+
+npm install zod nanoid
+
+Optional:
+
+npm install better-sqlite3
+
+
+Recommended Python dependencies for ML:
+
+Create:
+- requirements-ml.txt
+
+Suggested packages:
+
+numpy
+pandas
+scipy
+scikit-learn
+joblib
+fastapi
+uvicorn
+pydantic
+matplotlib
+imbalanced-learn
+
+Optional stronger ML:
+
+xgboost
+lightgbm
+
+Optional deep learning later:
+
+torch
+transformers
+accelerate
+
+Optional time-series foundation model later:
+
+MOMENT-related package/checkpoint from Hugging Face
+
+Important:
+Deep learning dependencies are not necessary for the first working AI version.
+
+
+5. Concrete Changes to This Project
+-----------------------------------
+
+A. Firmware changes
+
+Current firmware already sends:
+- ecg
+- ecgWave
+- bpm
+- bpmEcg
+- bpmOptical
+- spo2
+- max30102
+- motion
+- piezo
+- piezoRaw
+- piezoDelta
+- piezoCalibration
+
+Add:
+- firmwareVersion
+- sessionId or bootId
+- millis timestamp
+- sensor health flags if possible
+
+Example:
+
+"firmwareVersion": "twin-medic-esp32-v1.1",
+"bootMillis": 123456,
+"sessionId": "ESP32-20260607-001"
+
+
+B. Server changes
+
+Current server:
+- accepts /api/telemetry
+- normalizes telemetry
+- broadcasts SSE stream
+
+Add:
+- schema validation
+- save telemetry to JSONL/SQLite
+- save labels
+- save prediction output
+- save recommendation output
+- API endpoint for labels
+- API endpoint for dataset export
+
+Suggested new endpoints:
+
+POST /api/telemetry
+GET /api/status
+GET /api/stream
+POST /api/labels
+GET /api/labels
+GET /api/export/dataset
+POST /api/predict
+
+
+C. Frontend changes
+
+Current dashboard:
+- live sensor display
+- piezo test page
+- simple AI recommendations
+
+Add:
+- label event button
+- label modal
+- prediction confidence display
+- abstain status
+- signal quality status
+- recommendation audit details
+- model version badge
+- export dataset button
+
+
+D. AI code changes
+
+Current:
+- src/MODELE_IA.js is rule-based.
+
+Refactor into:
+
+src/ai/signalQuality.js
+src/ai/featureExtractor.js
+src/ai/ruleBaseline.js
+src/ai/interventionPolicy.js
+src/ai/actionTemplates.js
+src/MODELE_IA.js
+
+MODELE_IA.js should become the orchestrator:
+
+telemetry
+-> signalQuality
+-> featureExtractor
+-> baseline or ML predictor
+-> interventionPolicy
+-> final aiDecision
+
+
+E. ML folder changes
+
+Add:
+
+ml/
+  requirements-ml.txt
+  build_dataset.py
+  train_baseline.py
+  evaluate.py
+  infer.py
+  api.py
+  models/
+  reports/
+
+
+6. Expected Result
+------------------
+
+After Phase 1-5:
+
+You will have:
+- live dashboard still working
+- logged telemetry dataset
+- labels for training
+- better explainable rule-based AI
+- signal quality checks
+- safer recommendations
+- dataset export
+
+Dashboard will show:
+- impact detected or not
+- strongest impact zone
+- severity
+- risk score
+- confidence
+- reason/explanation
+- recommendation
+- whether the model abstained
+
+
+After Phase 6-7:
+
+You will have:
+- trained ML model
+- Python inference API
+- dashboard prediction from trained model
+- evaluation metrics
+- model artifact files
+
+Expected model output:
+
+{
+  "modelVersion": "baseline-rf-v1",
+  "impactDetected": true,
+  "impactZone": "rightLeg",
+  "impactSeverity": "moderate",
+  "vitalAnomaly": false,
+  "riskScore": 74,
+  "confidence": 82,
+  "abstain": false,
+  "explanation": "High right-leg piezo delta with moderate motion spike. ECG and SpO2 stable.",
+  "recommendedAction": {
+    "actionType": "check_bleeding",
+    "urgency": "high",
+    "message": "Impact detected on right leg. Check bleeding and continue cardio/SpO2 monitoring.",
+    "humanEscalationRequired": true
+  }
+}
+
+
+7. Metrics to Measure
+---------------------
+
+Prediction metrics:
+- AUROC
+- AUPRC
+- macro-F1
+- sensitivity
+- specificity
+- false alarms per hour
+- time-to-detection
+- Brier score
+- calibration error
+
+System metrics:
+- missing sensor rate
+- packet delay
+- packet loss
+- WiFi signal
+- model abstention rate
+- operator override rate
+
+Safety metrics:
+- unsafe recommendation count
+- unsupported recommendation count
+- high-risk cases sent to human review
+- false negative impact cases
+- false positive critical alerts
+
+
+8. What Not To Do First
+-----------------------
+
+Do not start with:
+- Llama
+- Qwen-VL
+- big LLM chatbot
+- vision-language model
+- cloud-only heavy model
+
+Why:
+- Your current project has sensor time-series data, not camera/text/audio input.
+- You first need labels and logged data.
+- A simple explainable model is better for competition/demo and debugging.
+
+
+9. Final Recommended First Implementation
+-----------------------------------------
+
+The best next implementation is:
+
+1. Add telemetry logging in server/index.js.
+2. Add label UI in dashboard.
+3. Refactor MODELE_IA.js into quality + features + rules + policy.
+4. Export a dataset.
+5. Train Random Forest / XGBoost baseline.
+6. Connect Python FastAPI inference.
+7. Display confidence, abstain, and recommendation reason.
+
+This gives a real intelligent model pipeline while staying practical for your current ESP32 hardware and dashboard.
+

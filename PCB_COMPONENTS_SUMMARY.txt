@@ -1,0 +1,401 @@
+TWIN-MEDIC PCB COMPONENTS SUMMARY
+=================================
+
+Purpose
+-------
+This file summarizes the components needed to build a PCB board for the Twin-Medic ESP32 project.
+
+Project sensors:
+- ESP32 main controller with WiFi
+- 5 analog piezo vibration sensors
+- AD8232 ECG module
+- GY-MAX30102 pulse oximeter / heart sensor
+- MPU-9250 or MPU-6500 gyroscope/accelerometer
+- Optional GPS module
+
+
+1. Recommended PCB Strategy
+---------------------------
+
+For your current competition prototype, the safest and fastest PCB is a carrier board:
+
+- Put an ESP32 DevKit or ESP32-WROOM module on the PCB.
+- Use connectors for the sensor modules.
+- Keep the AD8232, MAX30102, MPU, and piezo boards as small plug-in modules first.
+
+This is easier than placing the bare AD8232, MAX30102, and MPU chips directly on the PCB, because those chips need careful analog/optical/layout design.
+
+Recommended first PCB version:
+- ESP32 DevKit socket or ESP32-WROOM module
+- Sensor headers
+- 3.3V power rail
+- I2C pullups
+- Analog protection for piezo and ECG lines
+- Clear pin labels on silkscreen
+
+
+2. Main Controller Section
+--------------------------
+
+Component: ESP32 DevKit or ESP32-WROOM-32E module
+Function: Main microcontroller, WiFi telemetry, sensor reading.
+Voltage: 3.3V logic.
+
+Recommended for easiest PCB:
+- Use 2 rows of female headers for an ESP32 DevKit board.
+- This avoids designing USB-UART, boot circuit, RF antenna layout, and regulator from zero.
+
+Recommended for final compact PCB:
+- Use ESP32-WROOM-32E or ESP32-WROOM module.
+- Add USB-UART chip, BOOT button, EN/RESET button, 3.3V regulator, and antenna keepout.
+
+Required ESP32 support components if using bare ESP32 module:
+- 3.3V regulator capable of at least 600 mA, better 800 mA or more.
+- 10 uF capacitor near ESP32 3.3V input.
+- 100 nF decoupling capacitors close to power pins.
+- EN pullup resistor, usually 10 kOhm to 3.3V.
+- EN reset capacitor, often 100 nF to GND.
+- BOOT button on GPIO0 to GND.
+- RESET/EN button to GND.
+- USB-UART converter such as CP2102N, CH340C, or FT232.
+- USB-C or Micro-USB connector.
+- ESD protection for USB D+ and D-.
+- Keepout area under and in front of the ESP32 antenna.
+
+
+3. Power Supply Section
+-----------------------
+
+Input options:
+- USB 5V input
+- Li-ion/LiPo battery input
+- External 5V input header
+
+Recommended rails:
+- 5V rail: from USB or battery charger/boost if needed.
+- 3.3V rail: ESP32 and all sensor logic.
+
+Important:
+- ESP32 ADC pins must not receive more than 3.3V.
+- Power the piezo analog modules with 3.3V if their AO output goes to ESP32 ADC.
+- If a module is powered at 5V, its output may damage the ESP32 unless level shifted/protected.
+
+Recommended components:
+- 3.3V LDO or buck regulator, at least 600 mA.
+- Power switch.
+- Power LED with resistor.
+- 10 uF input capacitor.
+- 10 uF output capacitor.
+- 100 nF decoupling capacitors near every module/header.
+- Optional ferrite bead between digital 3.3V and analog/sensor 3.3V.
+- Optional LiPo charger module/IC if battery powered, for example TP4056 module for prototype.
+
+
+4. AD8232 ECG Section
+---------------------
+
+Current firmware pin map:
+- AD8232 OUT -> ESP32 GPIO34
+- AD8232 LO+ -> ESP32 GPIO25
+- AD8232 LO- -> ESP32 GPIO26
+- VCC -> 3.3V
+- GND -> GND
+
+Recommended PCB component choice:
+- Use a 5-pin or 6-pin header for an AD8232 ECG module.
+- Header pins: VCC, GND, OUT, LO+, LO-, optional SDN.
+
+If you use the bare AD8232 chip:
+- Use the AD8232 datasheet reference circuit.
+- Add the required high-pass/low-pass filter resistors and capacitors.
+- Add right-leg-drive/electrode protection components.
+- Use proper ECG electrode connector.
+- Keep ECG analog traces short and far from WiFi antenna, USB, switching regulator, and digital lines.
+
+Important medical safety:
+- Do not connect a human body to a non-isolated USB-powered circuit for real medical use.
+- For a real wearable/medical product, use battery power, isolation, current limiting, ESD protection, and medical safety standards.
+- This prototype is for demonstration, not clinical diagnosis.
+
+Recommended protection/filtering:
+- Series resistor between AD8232 OUT and GPIO34: 100 Ohm to 1 kOhm.
+- Optional small capacitor to GND on ADC input: 1 nF to 10 nF.
+- ESD protection on electrode connector lines.
+- Clear electrode labels: RA, LA, RL or +, -, REF.
+
+
+5. Piezo Vibration Sensor Section
+---------------------------------
+
+Current firmware pin map:
+- Piezo right arm AO -> GPIO35
+- Piezo left arm AO -> GPIO32
+- Piezo right leg AO -> GPIO33
+- Piezo left leg AO -> GPIO36
+- Piezo chest AO -> GPIO39
+- Each module VCC -> 3.3V
+- Each module GND -> GND
+
+Recommended connector:
+- 5 separate 3-pin JST/XH/PH headers or 2.54 mm headers.
+- Pins per connector: VCC, GND, AO.
+
+Important:
+- Use AO analog output, not DO digital output.
+- GPIO36 and GPIO39 are input-only ADC pins. This is OK for analog input.
+- GPIO36 and GPIO39 have no internal pullup/pulldown. Add an external pulldown if the signal floats.
+- Use ADC1 pins only for analog sensors because ADC2 conflicts with ESP32 WiFi.
+
+Recommended protection per piezo AO line:
+- 1 kOhm series resistor from sensor AO to ESP32 ADC pin.
+- 100 nF capacitor from ADC pin to GND if the signal is noisy.
+- 1 MOhm pulldown from ADC pin to GND, especially for GPIO36/GPIO39.
+- Optional Schottky clamp diodes to 3.3V and GND if the module output can spike.
+
+Note:
+- If you use raw piezo discs instead of analog piezo modules, you need a full signal conditioning circuit. Raw piezo discs can create voltage spikes and should not connect directly to ESP32 ADC.
+
+
+6. GY-MAX30102 Section
+----------------------
+
+Current firmware pin map:
+- SDA -> GPIO21
+- SCL -> GPIO22
+- VCC -> 3.3V, if using a breakout module that supports 3.3V
+- GND -> GND
+
+Recommended PCB component choice:
+- Use a 4-pin header for a GY-MAX30102 module.
+- Header pins: VCC, GND, SDA, SCL.
+
+If using the bare MAX30102 chip:
+- The MAX30102 uses a 1.8V supply for the sensor and a separate LED supply.
+- Bare-chip layout is harder because it is an optical biosensor.
+- You need correct optical window placement, clean power, and good mechanical finger contact.
+- For your first PCB, use the GY-MAX30102 breakout module instead.
+
+Recommended support components:
+- I2C pullup resistors to 3.3V: 4.7 kOhm on SDA and SCL.
+- 100 nF decoupling capacitor close to module VCC/GND.
+- Optional 10 uF capacitor near sensor connector.
+- Keep I2C traces short if possible.
+
+
+7. MPU-9250 / MPU-6500 Section
+------------------------------
+
+Current firmware pin map:
+- SDA -> GPIO21
+- SCL -> GPIO22
+- VCC -> 3.3V
+- GND -> GND
+
+Recommended PCB component choice:
+- Use a GY-MPU9250, GY-6500, or compatible breakout module header.
+- Header pins: VCC, GND, SDA, SCL, optional INT.
+
+Notes:
+- MPU-6500 is 6-axis: accelerometer + gyroscope.
+- MPU-9250 is 9-axis: accelerometer + gyroscope + magnetometer.
+- Many low-cost MPU-9250 modules are clones or may not include a real magnetometer, so verify before relying on magnetometer data.
+
+Recommended support components:
+- Shared I2C pullups with MAX30102: 4.7 kOhm to 3.3V.
+- 100 nF decoupling capacitor near module.
+- Optional INT pin to ESP32 GPIO if later needed.
+- Place the IMU near the center of the board or near the body mounting point for cleaner motion data.
+
+
+8. Shared I2C Bus
+-----------------
+
+I2C pins:
+- SDA: GPIO21
+- SCL: GPIO22
+
+Devices on bus:
+- MAX30102, usually address 0x57
+- MPU-9250/6500, usually address 0x68 or 0x69
+
+Required components:
+- 4.7 kOhm pullup resistor from SDA to 3.3V.
+- 4.7 kOhm pullup resistor from SCL to 3.3V.
+
+Optional components:
+- 33 Ohm to 100 Ohm series resistors on SDA/SCL if the cable is long or ringing appears.
+- I2C connector expansion header.
+
+
+9. Optional GPS Section
+-----------------------
+
+If you add a NEO-6M or similar GPS:
+
+Recommended pins:
+- GPS TX -> ESP32 RX pin, for example GPIO16
+- GPS RX -> ESP32 TX pin, for example GPIO17
+- VCC -> module-supported voltage, often 3.3V or 5V depending on module
+- GND -> GND
+
+Recommended connector:
+- 4-pin header: VCC, GND, TX, RX.
+
+Notes:
+- Use 3.3V logic on ESP32 RX.
+- Place GPS antenna away from ESP32 WiFi antenna if possible.
+
+
+10. Connectors and User Interface
+---------------------------------
+
+Recommended connectors:
+- USB-C or Micro-USB for power/programming.
+- ESP32 DevKit socket, if using DevKit.
+- 5 x 3-pin piezo headers.
+- 1 x AD8232 header.
+- 1 x MAX30102 I2C header.
+- 1 x MPU I2C header.
+- Optional GPS UART header.
+- Optional battery JST-PH 2-pin connector.
+- Optional expansion header: 3.3V, GND, GPIO, I2C.
+
+Buttons:
+- RESET / EN button.
+- BOOT / GPIO0 button, if using bare ESP32 module.
+
+Indicators:
+- Power LED.
+- Optional status LED controlled by ESP32.
+- Optional charging LED if battery charger is included.
+
+
+11. Suggested Bill of Materials, Prototype Carrier PCB
+------------------------------------------------------
+
+Main:
+- 1 x ESP32 DevKit or ESP32-WROOM-32E module
+- 1 x PCB carrier board
+
+Power:
+- 1 x 3.3V regulator, at least 600 mA
+- 2 x 10 uF capacitors
+- 6 to 12 x 100 nF capacitors
+- 1 x power switch
+- 1 x power LED
+- 1 x LED resistor, 330 Ohm to 1 kOhm
+
+Sensors:
+- 5 x analog piezo vibration sensor modules
+- 1 x AD8232 ECG module
+- 1 x GY-MAX30102 module
+- 1 x MPU-9250 or MPU-6500 module
+- Optional 1 x GPS module
+
+I2C:
+- 2 x 4.7 kOhm resistors for SDA/SCL pullups
+
+Analog protection:
+- 6 x 1 kOhm series resistors for ECG OUT + 5 piezo AO lines
+- 5 x 1 MOhm pulldown resistors for piezo AO lines
+- Optional 6 x 100 nF capacitors for analog noise filtering
+- Optional ESD/TVS diodes for external connectors
+
+Connectors:
+- 5 x 3-pin headers for piezo sensors
+- 1 x 5-pin/6-pin header for AD8232
+- 2 x 4-pin headers for I2C modules
+- Optional 1 x 4-pin GPS header
+- Optional 1 x JST-PH battery connector
+
+
+12. Pin Map for the PCB Silkscreen
+----------------------------------
+
+ESP32:
+- GPIO34: ECG OUT
+- GPIO25: ECG LO+
+- GPIO26: ECG LO-
+- GPIO35: Piezo right arm AO
+- GPIO32: Piezo left arm AO
+- GPIO33: Piezo right leg AO
+- GPIO36: Piezo left leg AO
+- GPIO39: Piezo chest AO
+- GPIO21: I2C SDA
+- GPIO22: I2C SCL
+- 3V3: sensor power
+- GND: common ground
+
+Optional:
+- GPIO16: GPS RX
+- GPIO17: GPS TX
+
+
+13. PCB Layout Rules
+--------------------
+
+ESP32:
+- Keep the antenna area free of copper, ground plane, traces, and components.
+- Put the ESP32 antenna at the board edge.
+
+Power:
+- Use a solid ground plane.
+- Put regulator capacitors close to the regulator.
+- Put 100 nF capacitors close to each module power pin.
+
+Analog sensors:
+- Keep ECG and piezo analog traces short.
+- Route ECG away from USB, WiFi antenna, regulator, and fast digital signals.
+- Do not route analog traces under the ESP32 antenna.
+- Use clear ground return paths.
+
+I2C:
+- Keep SDA/SCL traces short and parallel only when needed.
+- Use 4.7 kOhm pullups to 3.3V.
+- Avoid long unshielded I2C cables.
+
+Connectors:
+- Put labels on the PCB: VCC, GND, AO, SDA, SCL, OUT, LO+, LO-.
+- Use keyed connectors if possible to avoid reversed wiring.
+
+
+14. Minimum PCB Version for Your Current Code
+---------------------------------------------
+
+If you want the simplest PCB compatible with the current firmware, build:
+
+- ESP32 DevKit socket
+- 5 piezo analog connectors:
+  - GPIO35, GPIO32, GPIO33, GPIO36, GPIO39
+- AD8232 connector:
+  - OUT GPIO34, LO+ GPIO25, LO- GPIO26
+- I2C connector pair:
+  - SDA GPIO21, SCL GPIO22, 3.3V, GND
+- 4.7 kOhm SDA/SCL pullups
+- 3.3V power distribution
+- 1 kOhm series resistors on analog lines
+- 1 MOhm pulldown resistors on piezo analog lines
+- Power LED and reset access
+
+This version should match the current dashboard and ESP32 firmware.
+
+
+15. Important Warnings
+----------------------
+
+- Do not feed 5V analog output into ESP32 ADC pins.
+- GPIO36 and GPIO39 are input-only; do not use them as outputs.
+- ADC2 pins should be avoided while WiFi is active.
+- Do not use this PCB for real medical decisions without professional validation.
+- ECG electrodes connected to a person require serious electrical safety design.
+- Battery power and isolation are strongly recommended for any body-connected prototype.
+
+
+16. Sources Checked
+-------------------
+
+- Espressif ESP32 / ESP32-WROOM datasheets for 3.3V operation, ADC, WiFi, PCB placement, and input-only GPIO notes.
+- Analog Devices AD8232 product page/datasheet for ECG front-end function, supply range, rail-to-rail output, leads-off detection, and ECG filtering.
+- Analog Devices MAX30102 product page/datasheet for optical heart-rate/SpO2 sensor, I2C communication, and sensor/LED power rails.
+- TDK InvenSense MPU-6500 / MPU-9250 documentation for IMU function, I2C/SPI interface, and supply range.
+

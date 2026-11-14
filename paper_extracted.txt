@@ -1,0 +1,923 @@
+Powerful Multi-Model Architecture for Outcome
+Prediction and Persuasive Intervention
+
+Executive summary
+
+Based on the uploaded project summary, your current system is not a generic multimodal AI problem: it
+is primarily a streaming physiological and motion telemetry problem with optional context. The
+present input set is dominated by piezo pressure-strip telemetry, ECG segments and derived BPM/HRV,
+MAX30102 SpO₂ and pulse data, IMU acceleration/gyroscope, optional GPS, patient proﬁle data, and
+packet-level metadata. The target outputs already described include impact detection, impact zone and
+severity, oxygen/pulse risk, a synthetic time-to-emergency score, and a recommendation class. That
+means the technically strongest starting point is a sensor-ﬁrst architecture that treats time-series and
+tabular modelling as the core, then adds text, audio, vision, and richer multimodal capabilities behind
+stable interfaces rather than making them the ﬁrst-class dependency on day one.
+ﬁleciteturn0ﬁle0
+
+The recommended design is a composed, specialist architecture rather than a single monolithic
+foundation model. In practice, that means separate pretrained encoders per modality, a fusion layer
+that can handle missing and asynchronous inputs, a calibrated prediction layer with uncertainty and
+abstention, and a constrained intervention-policy module that chooses whether, when, and how to
+deliver suggestions. For your current input mix, the best default is a hybrid of early fusion for
+synchronised physiological streams and gated late fusion plus cross-modal attention for sparse
+or optional inputs. This is more robust than pure early fusion when sensors drop out, and more
+informative than pure late fusion when the signal interactions themselves matter. Cross-attentional
+fusion has repeatedly shown practical value in multimodal settings where interactions between
+modalities are important, while the NIST AI RMF and FDA/IMDRF GMLP both emphasise lifecycle risk
+management, trustworthiness, and total-product monitoring for high-stakes AI. 1
+
+For the predictive core, I would prioritise MOMENT-like time-series foundation encoders or a similar
+pretrained temporal backbone, combined with a tabular/proﬁle model such as TabPFN or
+TransTab, and keep strong classical baselines in the evaluation loop. For language generation in the
+intervention layer, I would begin with a small-or-medium instruct model such as Gemma 2 2B/3B-
+card, Llama 3.1 8B, or Mistral Nemo 12B, but only as a surface realiser or controlled rewriter on top of a
+rule- and policy-governed action schema. For eﬃcient adaptation, LoRA or QLoRA should be the default
+before full ﬁne-tuning, because they reduce trainable parameters and memory burden substantially
+while preserving strong downstream performance in many settings. 2
+
+The most important non-technical conclusion is that persuasive suggestions in a health-adjacent
+system must be supportive, transparent, and reversible rather than manipulative. The
+intervention module should never directly optimise for engagement alone. It should optimise for
+outcome improvement under safety constraints, using eligibility rules, contraindication checks, conﬁdence
+thresholds, escalation logic, and post-deployment monitoring. In a healthcare or safety-relevant setting,
+this design posture aligns better with the WHO’s guidance on AI for health, the NIST AI RMF, and FDA/
+IMDRF’s emphasis on safe lifecycle governance. 3
+
+                                                                         1
+Project inputs and design implications
+
+Your uploaded summary implies a streaming architecture with periodic telemetry packets carrying raw
+and derived measurements from several embedded sensing channels. Concretely, the system currently
+includes piezo pressure-strip values, ECG waveform slices and derived BPM/HRV, pulse and SpO₂
+signals, IMU motion/gyro channels, optional GPS coordinates and maps, and patient-proﬁle context
+such as chronic conditions, allergies, medications, and a recommendation catalogue. The outputs
+already planned are not just risk probabilities; they also include actionable recommendation classes.
+That is why the architecture must separate outcome modelling from intervention selection instead of
+trying to collapse both into one end-to-end black box. ﬁleciteturn0ﬁle0
+
+For clarity, the currently speciﬁed and currently unspeciﬁed modalities are diﬀerent. The uploaded design
+speciﬁes time-series, tabular/contextual, and limited geospatial/context inputs. It does not
+currently specify native image streams, free-text document feeds, or microphone audio as ﬁrst-order
+modalities. Those future modalities are worth planning for, but they should remain optional connectors
+in phase one. The implication is straightforward: do not anchor the ﬁrst production version on a vision-
+language model unless you actually add a camera or document stream; otherwise you would be paying
+a latency and governance cost for no immediate gain. ﬁleciteturn0ﬁle0
+
+This also changes what “multimodal” should mean in your project. In phase one, the most important
+multimodal fusion problem is physiological-time-series plus structured proﬁle context, not “image
+plus text”. That is a good thing: it narrows the problem enough to make rigorous evaluation possible. It
+also means that missing-modality handling should be a ﬁrst-class requirement, because proﬁle data,
+GPS, and future user-entered text will not arrive with the same cadence or reliability as the streaming
+sensor channels. ﬁleciteturn0ﬁle0
+
+Recommended architecture
+
+The best ﬁt for the current project is a modular expert-composition architecture with four logical
+planes: ingestion and quality control, modality encoders, fusion and prediction, and intervention policy
+with strict guardrails. The predictive stack should estimate both outcomes and uncertainty; the policy
+stack should only act when the system is eligible, conﬁdent enough, and not blocked by rules or
+contraindications. This split improves debuggability, monitoring, and compliance posture. It also lets
+you swap the policy generator or one encoder without retraining the entire system. 4
+
+                                                                 Time-series encoder                                                                                                                                                         Candidate action
+                                                                  ECG PPG IMU piezo                                                                                                                                                               generator
+
+                                                               Tabular/profile encoder                                                                                                                                                  templates + constrained
+                                                              conditions meds allergies                                                                                                                                                               LLM
+
+                                                                     demographics                                       Prediction heads                                  safe and confident  Intervention policy                           Personalisation and      Persuasive suggestion
+                                                                                                                     impact detection zone                                                           module                                          ranking                   delivery
+                                                                    Context encoder
+                                                               GPS map state schedule                                          severity                                                                                                 contextual bandit or uplift   Abstain escalate log
+                                                                                                                                                                                                                                                      model
+                                                                           history                                           Risk heads
+                                                                                                                   SpO2 pulse deterioration  Eligibility and safety gate
+                                                              Optional future encoders
+ Embedded devices and   Ingestion bus  Signal quality checks        text audio vision      Hybrid fusion layer         time-to-emergency                                                                                                        Guardrails                                  User response and        Monitoring drift       Retraining and policy
+           gateway                     timestamp alignment                               early fusion for aligned                                                                                                                       contraindications tone                               outcome logging   calibration fairness safety           updates
+                                                                                                                         Uncertainty and                                                                                                facts human escalation
+piezo ECG SpO2 IMU GPS                  missingness masks                                          streams               calibration head
+             profile                                                                       gated late fusion for
+
+                                                                                               sparse inputs
+                                                                                         cross-modal attention
+
+                                                                                                                                                                                                                   unsafe or uncertain
+
+Why this architecture is the right default
+
+For the current sensor mix, early fusion is appropriate inside the physiological block because ECG, PPG/
+SpO₂, piezo, and IMU are temporally coupled and often informative precisely because of their joint state
+at the same moment. However, late fusion should still be used above that level for optional or sparse
+modalities such as GPS, patient proﬁle updates, or later-added notes. This prevents a brittle system in
+which the entire predictor becomes unusable when one modality is missing. Cross-modal attention is
+most useful one layer higher, when the model needs to learn interactions between temporal state
+tokens and context tokens rather than merely concatenate them. 5
+
+                                                                                                                                                                          2
+I therefore recommend the following fusion policy.
+
+Fusion     When to use it     Main strength            Main weakness  Recommendation for
+strategy                                                              this project
+           Aligned sensor     Captures joint           Sensitive to
+Early      windows from       dynamics directly        missing or     Use inside the
+fusion     piezo, ECG, PPG,                            misaligned     physiological
+           IMU                Robust to                channels       encoder block
+Late                          missingness and
+fusion     Sparse proﬁle,     asynchronous             Can miss deep  Use for system-level
+           GPS, optional      arrival                  inter-modal    aggregation
+Adapter    future modalities                           interactions
+fusion                        Cheap                                   Use when adding
+           Adding new         extensibility            Requires       text or vision after
+Cross-     modalities or      without retraining       disciplined    phase one
+modal      domains later      everything               adapter
+attention                                              management     Use in the top fusion
+           Rich interactions                                          layer, not at raw-
+           between            Learns which             Heavier and    input level
+           temporal state     modality should          more complex
+           and context/       attend to which
+           history/text       context
+
+Intervention policy module
+
+The intervention module should not be a generic chatbot that reads raw predictor outputs and invents
+recommendations. It should be a policy engine that operates over a structured action schema such as:
+
+        • action_type
+        • target_outcome
+        • urgency
+        • recommended_channel
+        • message_template_id
+        • patient_constraints
+        • contraindications
+        • human_escalation_required
+        • confidence_required
+
+The best pattern is a three-stage policy. First, a safety and eligibility gate decides whether the system
+should intervene at all. Second, a candidate-action generator produces a small set of allowed
+suggestions from templates, retrieval, or a constrained LLM. Third, a ranker chooses the expected-best
+action under constraints, using context features, outcome estimates, burden estimates, and prior
+response history. This is where contextual bandit or uplift-style learning is useful: the ranker can learn
+which action helps which user in which context, while oﬄine policy evaluation and guarded exploration
+reduce the risk of blindly optimising on biased feedback loops. 6
+
+“Persuasion” should be deﬁned narrowly and ethically here. The system should use truthful rationale,
+user preference alignment, transparent urgency, and actionable speciﬁcity. It should not use
+deceptive framing, dark patterns, emotional coercion, or false certainty. In a health-adjacent context, it
+
+                                                    3
+is safer to think of the module as motivational decision support rather than behavioural
+manipulation. Recommendations should therefore be factual, attributable to observed state, and easy
+to override; uncertainty should be explicit; and pathways to human review should be obvious. 3
+
+Pretrained model landscape
+
+The tables below focus on oﬃcial model pages, oﬃcial repositories, or primary papers. Where an oﬃcial
+page did not clearly surface an exact parameter count or a checkpoint licence in the retrieved snippet, I
+mark that explicitly instead of guessing.
+
+Vision
+
+Model       Size / licence  Strengths          Trade-oﬀs        Best use in this   Source
+                                                                project
+ViT base    86.6M;          Clean baseline,    Not                                    7
+patch16     Apache-2.0      widely             specialised for  Future camera         8
+224                         supported, easy    dense            snapshots or          9
+            Base self-      transfer           localisation     document crops       10
+DINOv2      supervised                                                               11
+base        encoder;        Strong             Extra task       Future self-         12
+            oﬃcial card     universal visual   head usually     supervised
+SwinV2      ~88M; HF        features           needed           image feature
+base        checkpoint      without labels                      extraction
+            Apache-2.0;                        Slightly more
+ConvNeXt    upstream repo   Hierarchical       integration      Future detection/
+V2 base     MIT             backbone,          complexity       segmentation of
+                            strong for         than ViT         scenes or
+SigLIP 2    88.7M;          dense tasks                         wearables
+base        Apache-2.0                         Less natively
+                            Strong ConvNet     multimodal       Future image
+Florence-2  0.4B;           backbone,          than SigLIP/     classiﬁcation on
+base        Apache-2.0      robust transfer    CLIP families    modest
+                                                                hardware
+            0.23B; MIT      Strong zero-       Heavier than
+                            shot image-text    plain encoders   Future vision
+                            retrieval and                       encoder for
+                            semantic           More complex     multimodal
+                            alignment          than needed      expansion
+                                               for phase one
+                            Versatile vision-                   OCR-style or
+                            language                            document-vision
+                            capabilities                        add-ons later
+
+Text
+
+                            4
+Model         Size / licence Strengths              Trade-oﬀs     Best use in this   Source
+                                                                  project
+
+                              8,192-token context, Mostly         Future long-form
+
+ModernBERT 149M;              strong modern         English/code  notes, forms,      13
+
+base          Apache-2.0      encoder, eﬃcient      pretraining   questionnaires,
+
+                                                                  retrieval
+
+              86M             Excellent encoder     Shorter-      Low-latency note
+              backbone        baseline for
+DeBERTa v3    plus 98M        classiﬁcation         context       classiﬁcation or   14
+base          embedding
+              params; MIT                           proﬁle than text quality
+
+                                                    ModernBERT checks
+
+              1,024-d
+
+              embeddings,
+
+              8,192           Multilingual,         Best as       Retrieval over
+
+              context; MIT;   dense+sparse+multi- embedding       policies,
+
+BGE-M3        exact                                               manuals,           15
+
+              parameter       vector retrieval      model, not    recommendation
+
+              count not       modes                 generator     evidence
+
+              surfaced on
+
+              card
+
+              3B params                                           Constrained
+
+Gemma 2 2B on oﬃcial          Good small LLM for Custom           rewriting of
+
+instruct      card;           controlled            Google                           16
+
+checkpoint    Gemma           generation            usage terms   intervention
+
+              licence                                             messages
+
+              8B; Llama       Strong general        Custom
+              3.1             instruction
+Llama 3.1 8B  Community       following, wide       terms and     Higher-capability
+Instruct      Licence         ecosystem
+                                                    acceptable- policy realiser or   17
+
+                                                    use           summariser
+
+                                                    constraints
+
+Mistral       12B;            128k context, strong  Larger        Central policy
+Nemo          Apache-2.0      multilingual text     serving
+Instruct                      model                 footprint     LLM when cloud
+2407
+                                                                                                                 18
+
+                                                                  serving is
+
+                                                                  acceptable
+
+Audio
+
+Model         Size / licence  Strengths             Trade-oﬀs     Best use in this   Source
+                                                                  project
+Whisper       244M;           Strong                Decoder-                           19
+small         Apache-2.0      multilingual ASR      based;        Future speech
+                              and translation       heavier than  intake or voice-
+                              baseline              small         note
+                                                    encoders      transcription
+
+                                                5
+Model       Size / licence  Strengths            Trade-oﬀs      Best use in this    Source
+                                                                project
+                                                                                      20
+wav2vec2    94.4M;          Strong speech        Mostly         Future                21
+base 960h   Apache-2.0      encoder/ASR          speech-        lightweight ASR       22
+                            baseline             centric, not   or voice-state        23
+                                                 broad audio    features              24
+                                                 semantics                            25
+
+HuBERT      Base encoder;   Strong self-         Needs task     Future robust
+base ls960  Apache-2.0;     supervised speech    head/ﬁne-      speech
+            exact count     representations      tuning         embeddings
+            not surfaced
+            in card
+
+W2v-BERT    0.6B; MIT       Strong               Heavier than   Future
+2.0                         multilingual         wav2vec/       multilingual
+                            speech encoder,      HuBERT         speech
+                            143+ languages       base           representation
+                            pretraining                         learning
+
+UniSpeech-  Base            Good speaker-        Smaller        Future speaker-
+SAT base    checkpoint;     aware SSL family     ecosystem      state or
+            Apache-2.0 in                                       robustness
+            card chain;                                         experiments
+            exact count
+            not surfaced
+
+Qwen2-      8B; Apache-2.0  End-to-end audio-    Large          Future audio
+Audio 7B                    language             serving cost   analysis
+Instruct                    reasoning                           assistant if voice
+                                                                enters scope
+
+CLAP HTSAT  Exact count     Audio-text           Less suitable  Future
+unfused     not surfaced;   contrastive          for precise    environmental
+            Apache-2.0      retrieval, zero-     ASR            sound
+                            shot audio                          classiﬁcation
+                            classiﬁcation
+
+Tabular
+
+Model       Size / licence      Strengths        Trade-oﬀs      Best use in         Source
+TabPFN                                                          this project
+                                                                                      26
+            Foundation model    Excellent        Evolving       Patient-
+            family; repo notes  small/           commercial/    proﬁle risk
+            v3 weights non-     medium-          licensing      heads, low-
+            commercial, v2      table            terms; scale   data
+            code/weights        performance      limits matter  classiﬁcation/
+            under Prior Labs    with little                     regression
+            licence derived     HPO
+            from Apache-2.0
+            with attribution
+
+                                              6
+Model           Size / licence     Strengths        Trade-oﬀs       Best use in       Source
+                                                                    this project
+TransTab        Conﬁgurable;       Transferable     Less battle-                        27
+                BSD-2-Clause       tabular          tested than     Reusable            28
+                                   transformer      trees in        proﬁle/             29
+                                   across tables;   some            context             30
+                                   embedding-       industrial      encoder             31
+                                   friendly         settings        across
+                                                                    cohorts
+FT-Transformer  Conﬁgurable;       Strong neural    Not a ﬁxed
+                Apache-2.0 repo    tabular          pretrained      Fusion-
+                                   baseline;        foundation      friendly
+                                   easy to fuse     checkpoint      tabular
+                                   with other       by default      baseline
+                                   embeddings
+                                                                    Semi-
+SAINT           Conﬁgurable;       Row and          Repo            supervised
+                Apache-2.0         column           archived;       tabular
+                                   attention;       tuning          learning
+                                   contrastive      sensitivity     when labels
+                                   pretraining                      are scarce
+                                   option
+                                                                    Large-scale
+TabM            Conﬁgurable;       Strong           Not a           structured
+                Apache-2.0         modern           pretrained      context
+                                   tabular DL       FM in the       modelling
+                                   eﬃciency/        strict sense
+                                   accuracy                         Categorical-
+                                   trade-oﬀ                         heavy proﬁle
+                                                                    features
+TabTransformer  Conﬁgurable;       Strong           More paper-
+                paper-level,       contextual       level than
+                implementation-    categorical      ecosystem-
+                dependent licence  embeddings       standard
+
+A practical caveat is important here: true pretrained tabular foundation models remain much
+scarcer than text or vision models. For your project that is not a blocker, but it does mean you should
+treat tree ensembles and simple MLP/transformer baselines as mandatory comparators, even if your
+ﬁnal architecture is foundation-model-based. The reason is not conservatism; it is empirical discipline.
+
+  32
+
+Time-series
+
+Model           Size / licence    Strengths         Trade-oﬀs       Best use in this  Source
+                                                                    project
+TimesFM         500M              Strong            Forecasting-                        33
+2.0 500M        checkpoint;       forecasting       ﬁrst rather     Auxiliary trend
+                check oﬃcial      FM family,        than event-     and trajectory
+                card for current  good transfer     classiﬁcation-  forecasting
+                licence terms     value             ﬁrst
+
+                                                 7
+Model         Size / licence  Strengths         Trade-oﬀs        Best use in this   Source
+                                                                 project
+Chronos-      Base
+Bolt base     checkpoint;     Strong            Forecasting-     Time-to-
+              consult oﬃcial  probabilistic     ﬁrst
+              card for exact  forecasting                        deterioration and
+              current size/   family
+              licence                                                                                            34
+
+                                                                 risk trajectory
+
+                                                                 heads
+
+MOMENT-1      Base            One of the        Younger          Top candidate
+base          checkpoint;     most              ecosystem
+              oﬃcial card     attractive        than NLP         for your sensor-   35
+                              general time-     backbones
+                              series FM                          window encoder
+                              candidates for
+                              transfer
+
+                              Compact           Less broad
+
+Granite       TinyTimeMixer   family,           public           Small teacher/
+Time Series   family; oﬃcial
+TTM r2        card            appealing for     literature than  student            36
+
+                              eﬃcient           Chronos/         forecasting
+
+                              serving/          TimesFM          models
+
+                              distillation
+
+Moirai 1.1 R  Base            Broad             Less directly    Multi-horizon
+base          checkpoint;     probabilistic     targeted at
+              oﬃcial card     forecasting       event            forecasting back-  37
+                              framing           detection
+                                                                 end
+
+                              Compact           Smaller          Low-budget
+
+TimeMoE       50M; oﬃcial     open time-        ecosystem        experimentation    38
+50M           card
+                              series model      and validation and student
+
+                                                base             models
+
+For your current problem, I would not centre phase one on a pure forecasting FM. I would use a
+forecasting model only for auxiliary heads such as deterioration horizon or time-to-emergency. For the
+main detection/classiﬁcation backbone, a representation-learning temporal encoder such as MOMENT
+is more naturally aligned with impact detection, severity estimation, and risk classiﬁcation. 39
+
+Multimodal
+
+Model         Size / licence  Strengths         Trade-oﬀs        Best use in this   Source
+              0.23B; MIT                                         project
+Florence-2                    Broad vision-     Overkill until                        12
+base                          language utility  image/           Future
+                                                document         document, form,
+                                                inputs exist     or screen
+                                                                 understanding
+
+                                             8
+Model        Size / licence  Strengths          Trade-oﬀs      Best use in this   Source
+                                                               project
+PaliGemma    3B; Gemma       Strong transfer-   Custom                              40
+2 3B         licence         oriented VLM       usage terms    Future compact
+                             family                            medical/
+                                                Larger         document VLM
+                             Strong open        serving        experiments
+                             VLM with broad     budget
+Qwen2.5-VL   8B on oﬃcial    multimodal                        Future cloud VLM
+7B Instruct  card;           tasks              Custom
+             Apache-2.0                         terms and      for docs, charts,  41
+                             Strong general     governance
+                             multimodal         constraints    images
+                             assistant
+Llama 3.2    11B; Llama                         Large serving  Higher-end VLM
+11B Vision   3.2             Strong             footprint
+Instruct     Community       multimodal                        if Meta licensing  42
+             Licence         performance        Not a full
+Pixtral 12B                  with long          generative     is acceptable
+2409         12B decoder     context            assistant
+             plus 400M                                         Future
+             vision          Excellent vision-                 multimodal cloud 43
+             encoder;        language                          copilot
+             Apache-2.0      encoder for
+                             retrieval and
+SigLIP 2     0.4B;           alignment                         Future retrieval-
+base         Apache-2.0
+                                                               centric
+
+                                                                                                              11
+
+                                                               multimodal
+
+                                                               fusion
+
+Training and deployment roadmap
+
+The most reliable programme is a staged one. First, establish whether the project’s outcome labels are
+stable, clinically meaningful, and temporally aligned with the telemetry. Second, build hard numeric
+baselines before introducing foundation-model complexity. Third, add pretrained encoders and the
+intervention module separately. Fourth, deploy a conservative pilot where the system can abstain, log,
+and escalate rather than always acting. This progression follows the spirit of total-product lifecycle
+development in GMLP and the iterative governance emphasis in the NIST AI RMF. 44
+
+The data package needed for training is larger than the raw sensor feed. You need aligned raw packets,
+derived features, signal-quality indicators, patient proﬁle context, event labels, and intervention logs.
+Without the last item, you can train outcome predictors but not robust policy models. Because the
+uploaded summary does not specify dataset volume, prevalence, class imbalance, or label provenance,
+the compute and budget ranges below are planning estimates rather than quotes. They assume a
+phase-one system focused on time-series plus tabular inputs, with optional LoRA/QLoRA adaptation on
+one text model for message generation. ﬁleciteturn0ﬁle0
+
+                             9
+Milestone    What happens                 Indicative     Indicative  Exit criteria
+                                          compute        budget
+Data and                                                 range       Auditable dataset,
+label audit  Deﬁne gold labels,           CPU-heavy                  leakage-free splits,
+             timestamp tolerance,         ETL; 0–1 GPU   US$3k–15k   label deﬁnitions
+Baseline     cohort splits,                                          signed oﬀ
+modelling    missingness maps                            US$5k–20k
+                                                                     Stable baseline
+Foundation   XGBoost/MLP/TCN or           1–4 × L4/A10G  US$15k–     metrics and error
+encoder      simple temporal              for days       60k         taxonomy
+phase        baseline; proﬁle-only and
+             sensor-only ablations                       US$10k–     Clear gain over
+Policy and                                               40k         baselines,
+messaging    Add MOMENT-like              1–4 × A100/                acceptable
+phase        temporal encoder and         H100 for 1–3   US$20k–     calibration
+             tabular transfer model;      weeks          80k
+Pilot        test fusion variants                                    Safe constrained
+deployment                                               US$50k–     generation and
+             Build action schema,         1–2 × A100/    250k+       oﬄine policy lift
+Production   templated suggestions,       H100 for days
+hardening    then LoRA/QLoRA over         to 2 weeks                 On-call safe
+             2B–12B LLM                                              operations, no
+                                                                     severe safety
+             Low-risk rollout with        Mixed CPU/                 regressions
+             abstention, monitoring,      GPU serving
+             analyst review, replay                                  SLOs, safety case,
+             and shadow modes                                        monitoring,
+                                                                     controlled
+             Distillation, autoscaling,   Ongoing                    continuous
+             failover, security,          inference                  learning
+             compliance                   cluster plus
+             documentation                retraining
+                                          budget
+
+A sensible default training strategy is:
+
+        • Full ﬁne-tuning only for small encoders or when the domain gap is extreme and you have
+          abundant labels.
+
+        • LoRA for most language and multimodal adaptation.
+        • QLoRA when hardware is constrained or when iterating across many policy variants.
+        • Adapters/prompt tuning when you need rapid task specialisation and want to keep one frozen
+
+          backbone for many intervention styles or locales. 45
+
+For deployment, I recommend a split edge-cloud topology. On-device or on-gateway, keep only signal-
+quality checks, cryptographic packet veriﬁcation, buﬀering, and a tiny distilled fail-safe model or rules
+engine. In the cloud or edge server, host the heavier encoders, fusion model, calibrated prediction
+heads, and policy runtime. If you later add an LLM or VLM service, vLLM-style serving is attractive
+because PagedAttention-based systems improve throughput and memory eﬃciency for long-context
+generation. 46
+
+                                          10
+                                                      Edge logic                                                                                                         Cloud  Policy service  Constrained LLM service
+                                            packet auth quality rules
+Wearable and ESP32  Phone or local gateway                             Event stream / API  Feature and session store  Encoder services  Fusion and prediction                                                            Monitoring and audit
+         devices                                     tiny student                                                                                 service                                                                           store
+
+Data requirements and augmentation
+
+For the current project, the highest-value data improvements are not exotic generative synthesis; they
+are timestamp integrity, label quality, coverage of rare events, and intervention logging. That
+said, the following augmentation set is technically reasonable:
+
+Data type                                   Recommended augmentation                                                                    Why it helps
+ECG / PPG / piezo /
+IMU windows                                 Masking, sensor dropout simulation,                                                         Robustness to packet loss,
+                                            jitter, amplitude scaling, time warping                                                     motion artefact, and device
+Tabular proﬁle data                                                                                                                     variance
+                                            Missingness simulation, categorical
+GPS / context                               corruption, class-balanced resampling                                                       Better handling of sparse or
+                                            Noise injection, dropout, temporal                                                          incomplete patient context
+Intervention logs                           sparsiﬁcation
+                                            Counterfactual logging, delayed-                                                            Robustness to delayed or absent
+                                            reward tracking, propensities                                                               geolocation
+
+                                                                                                                                        Required for oﬄine policy
+                                                                                                                                        evaluation
+
+I would treat synthetic augmentation as secondary to collecting harder negatives, more edge cases, and
+more complete metadata around failures. In safety-relevant systems, the wrong rare case is usually
+more valuable than another million average windows. 47
+
+Evaluation, monitoring, and feedback
+
+Evaluation needs to be split into at least three layers: predictive quality, intervention quality, and
+system safety/operations. Oﬄine accuracy alone is not enough, because even a strong predictor can
+still generate unsafe or ineﬀective interventions, and even a good intervention policy can fail
+operationally if calibration drifts or missing-modality handling breaks in production. FDA/IMDRF GMLP
+and the NIST AI RMF both point in this direction: the model is only one part of the assurance problem.
+
+  44
+
+For the predictive model, the core metrics should include AUROC, AUPRC, macro-F1, sensitivity at
+clinically relevant speciﬁcity, Brier score, expected calibration error, and abstention coverage. Because
+the current project includes time-sensitive outputs, you also need time-to-detection, false alarms per
+hour/day, and alert precision at top-k urgency thresholds. For multi-head outputs, do not collapse
+everything into a single weighted score until each head is individually validated. ﬁleciteturn0ﬁle0
+
+For the intervention layer, the evaluation stack should combine oﬄine policy evaluation and online
+experimentation. Oﬄine, use replay, inverse-propensity-scored estimators, doubly robust estimators
+where possible, and conservative policy improvement before any live exposure. Online, prefer micro-
+randomised trials or tightly guarded A/B tests over uncontrolled rollout. This matters because
+recommendation systems can create self-feedback loops that hide whether the policy is truly improving
+outcomes or simply reinforcing its own historical actions. 48
+
+                                                                                           11
+A good experimental plan would look like this:
+
+Experiment            Purpose                   Primary metrics          Acceptance signal
+Sensor-only vs
+proﬁle-only vs fused  Prove composition         AUROC, AUPRC, ECE        Fused model beats each
+                      is adding value                                    single-modality baseline
+Early vs late vs
+hybrid fusion         Choose fusion             AUROC, calibration,      Hybrid wins under
+                      architecture              robustness under         realistic dropout
+Pretrained encoder                              missingness
+vs scratch baseline                                                      Pretrained model wins
+                      Justify foundation-       AUROC, sample            especially in low-label
+Static suggestions    model complexity          eﬃciency, OOD            regimes
+vs policy-ranker                                performance
+                                                                         Policy improves
+Template-only vs      Test whether the          Click-through,           outcome or adherence
+constrained LLM       policy module adds        adherence, outcome lift  without added harm
+rewrite               value
+Missing-sensor and                                                       LLM improves
+corrupted-packet      Test message              Comprehension,           readability without
+stress tests          surface generation        adherence, unsafe-       safety regressions
+                                                message rate
+Subgroup audit                                                           System abstains or
+                      Robustness                Graceful degradation,    degrades safely
+                                                abstention rate
+                                                                         No unacceptable
+                      Fairness                  Subgroup AUROC,          performance/calibration
+                                                subgroup ECE, gap        disparities
+                                                metrics
+
+Monitoring in production should focus on data drift, concept drift, calibration drift, intervention
+fatigue, and safety violations. Track per-modality missingness, packet delay, quality ﬂags, subgroup
+error rates, override frequency, contraindication blocks, and the distribution of generated actions. If you
+later use an LLM, also track hallucination-like unsupported claims, prompt-injection attempts, jailbreak
+success rate, and justiﬁcation-grounding coverage. These are not optional extras in a persuasive-
+intervention system; they are core safety telemetry. 49
+
+Ethical, legal considerations, and risk mitigation
+
+Because the uploaded design is health-adjacent and may inﬂuence urgent decisions, you should
+assume from the outset that this system will attract high-stakes governance expectations, even
+before you decide whether it is formally marketed as clinical decision support or another regulated
+category. FDA/IMDRF GMLP explicitly highlights safe, eﬀective, high-quality AI/ML medical devices
+across the total product lifecycle, while the WHO’s guidance on AI for health emphasises human
+wellbeing, transparency, accountability, and the management of power asymmetries and harms. The
+EU’s AI regulatory framework similarly treats high-risk uses as subject to materially stronger obligations.
+
+  50
+
+The main ethical and legal issues in your design are the following.
+
+                                                12
+Risk area           What can go wrong                     Mitigation strategy
+
+Bias and            Diﬀerent error rates or calibration   Stratiﬁed evaluation, subgroup
+unfairness          across age, sex, geography,           calibration, balanced data collection,
+                    comorbidity, or device types          fairness thresholds in release gates
+Adversarial and
+spooﬁng risk        Packet replay, sensor spooﬁng,        Signed packets, anomaly detection,
+                    prompt injection, GPS spooﬁng,        device attestation, schema validation,
+Privacy and         manipulated proﬁle data               guarded prompting, abstention
+conﬁdentiality
+                    Sensitive telemetry and health        Data minimisation, encryption in
+                    context leaked or over-retained       transit/at rest, role-based access,
+                                                          retention limits, privacy-by-design
+Unsafe persuasion   Overly forceful, deceptive, or non-
+                    transparent interventions             Template-ﬁrst generation, user
+                                                          autonomy, explicit rationale, no dark
+Hallucinated or     LLM invents facts or inappropriate    patterns, easy opt-out
+unsupported         recommendations
+advice                                                    Structured action schema, retrieval
+                                                          grounding, policy constraints, human
+Feedback-loop bias  Policy learns mainly from its own     escalation, unsupported-claim
+                    historical exposures                  blocker
+
+Over-reliance by    Users believe the system is certain   Logged propensities, counterfactual
+users               when it is not                        evaluation, randomised exploration
+                                                          budgets, periodic resets
+Regulatory          Product claims drift into a stricter
+ambiguity           regulated category                    Conﬁdence display, abstention,
+                                                          uncertainty messaging, human-in-
+                                                          the-loop review
+
+                                                          Early intended-use analysis, design
+                                                          history ﬁle, traceability, change
+                                                          control, legal review
+
+For persuasive suggestions speciﬁcally, the safest ethical boundary is this: the system may optimise
+for helpfulness and adherence only within explicit safety, truthfulness, and user-autonomy
+constraints. In other words, it may try to improve outcomes by making the right action easier to do,
+but it should not exploit fear, shame, or asymmetries of information. That distinction matters more in
+healthcare than in consumer recommendation, because the target user may already be vulnerable,
+distressed, or physically impaired. 51
+
+A good release standard is therefore to require each live recommendation to be:
+
+• traceable to observed signals or documented rules,
+• screened against contraindications and proﬁle constraints,
+• expressed with calibrated urgency,
+• easy to override,
+• logged for audit,
+• and escalated to a human or a simpler fallback path when uncertainty is high. 44
+
+                    13
+Open questions and limitations
+
+The uploaded summary describes the current telemetry and output schema clearly enough to design a
+strong architecture, but it does not specify dataset size, label provenance, latency targets, target device
+constraints, jurisdiction, or whether the ﬁnal product will be marketed as a regulated clinical tool. Those
+unknowns materially aﬀect the ﬁnal choice between a compact edge model, a cloud-ﬁrst fused model,
+and the level of documentation needed for production governance. ﬁleciteturn0ﬁle0
+
+A second limitation is that some oﬃcial model cards, especially in tabular and time-series modelling, do
+not expose the same level of checkpoint detail as modern text or vision cards. Where an exact
+parameter count or a deﬁnitive commercial licence was not clearly surfaced in the retrieved oﬃcial
+snippet, I have marked that rather than fabricating precision. In particular, before procurement or
+commercial deployment, you should do a ﬁnal legal check on the speciﬁc checkpoint versions you intend
+to use, because model-card terms, hosted checkpoint terms, and upstream repository terms do not
+always align perfectly. 52
+
+The strongest recommendation, given the evidence and the project summary, is still clear: build phase
+one around time-series and tabular composition, use a hybrid fusion design, keep the
+intervention policy separate from the predictor, and use constrained language generation only
+after you have a safe action schema and an auditable policy layer. That gives you the best balance
+of predictive power, extensibility, operational control, and safety.
+
+ 1 5 https://arxiv.org/abs/2111.05222
+
+https://arxiv.org/abs/2111.05222
+
+ 2 35 39 https://huggingface.co/AutonLab/MOMENT-1-base
+
+https://huggingface.co/AutonLab/MOMENT-1-base
+
+ 3 51 https://www.who.int/publications/i/item/9789240029200
+
+https://www.who.int/publications/i/item/9789240029200
+
+ 4 49 https://airc.nist.gov/AI_RMF_Knowledge_Base/AI_RMF
+
+https://airc.nist.gov/AI_RMF_Knowledge_Base/AI_RMF
+
+ 6 48 https://arxiv.org/abs/2111.13807
+
+https://arxiv.org/abs/2111.13807
+
+ 7 https://huggingface.co/google/vit-base-patch16-224
+
+https://huggingface.co/google/vit-base-patch16-224
+
+ 8 https://huggingface.co/facebook/dinov2-base
+
+https://huggingface.co/facebook/dinov2-base
+
+ 9 https://huggingface.co/microsoft/swinv2-base-patch4-window8-256
+
+https://huggingface.co/microsoft/swinv2-base-patch4-window8-256
+
+10 https://huggingface.co/facebook/convnextv2-base-22k-224
+
+https://huggingface.co/facebook/convnextv2-base-22k-224
+
+11 https://huggingface.co/google/siglip2-base-patch16-224
+
+https://huggingface.co/google/siglip2-base-patch16-224
+
+12 https://huggingface.co/microsoft/Florence-2-base
+
+https://huggingface.co/microsoft/Florence-2-base
+
+                                                                        14
+13 https://huggingface.co/answerdotai/ModernBERT-base
+
+https://huggingface.co/answerdotai/ModernBERT-base
+
+14 https://huggingface.co/microsoft/deberta-v3-base
+
+https://huggingface.co/microsoft/deberta-v3-base
+
+15 https://huggingface.co/BAAI/bge-m3
+
+https://huggingface.co/BAAI/bge-m3
+
+16 https://huggingface.co/google/gemma-2-2b-it
+
+https://huggingface.co/google/gemma-2-2b-it
+
+17 https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct
+
+https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct
+
+18 https://huggingface.co/mistralai/Mistral-Nemo-Instruct-2407
+
+https://huggingface.co/mistralai/Mistral-Nemo-Instruct-2407
+
+19 https://huggingface.co/openai/whisper-small
+
+https://huggingface.co/openai/whisper-small
+
+20 https://huggingface.co/facebook/wav2vec2-base-960h
+
+https://huggingface.co/facebook/wav2vec2-base-960h
+
+21 https://huggingface.co/facebook/hubert-base-ls960
+
+https://huggingface.co/facebook/hubert-base-ls960
+
+22 https://huggingface.co/facebook/w2v-bert-2.0
+
+https://huggingface.co/facebook/w2v-bert-2.0
+
+23 https://huggingface.co/microsoft/unispeech-sat-base-100h-libri-ft
+
+https://huggingface.co/microsoft/unispeech-sat-base-100h-libri-ft
+
+24 https://huggingface.co/Qwen/Qwen2-Audio-7B-Instruct
+
+https://huggingface.co/Qwen/Qwen2-Audio-7B-Instruct
+
+25 https://huggingface.co/laion/clap-htsat-unfused
+
+https://huggingface.co/laion/clap-htsat-unfused
+
+26 32 52 https://github.com/PriorLabs/TabPFN
+
+https://github.com/PriorLabs/TabPFN
+
+27 https://github.com/RyanWangZf/transtab
+
+https://github.com/RyanWangZf/transtab
+
+28 https://github.com/yandex-research/rtdl-revisiting-models
+
+https://github.com/yandex-research/rtdl-revisiting-models
+
+29 https://github.com/somepago/saint
+
+https://github.com/somepago/saint
+
+30 https://github.com/yandex-research/tabm
+
+https://github.com/yandex-research/tabm
+
+31 https://arxiv.org/abs/2012.06678
+
+https://arxiv.org/abs/2012.06678
+
+33 https://huggingface.co/google/timesfm-2.0-500m-pytorch
+
+https://huggingface.co/google/timesfm-2.0-500m-pytorch
+
+34 https://huggingface.co/amazon/chronos-bolt-base
+
+https://huggingface.co/amazon/chronos-bolt-base
+
+                                                                        15
+36 https://huggingface.co/ibm-granite/granite-timeseries-ttm-r2
+
+https://huggingface.co/ibm-granite/granite-timeseries-ttm-r2
+
+37 https://huggingface.co/Salesforce/moirai-1.1-R-base
+
+https://huggingface.co/Salesforce/moirai-1.1-R-base
+
+38 https://huggingface.co/Maple728/TimeMoE-50M
+
+https://huggingface.co/Maple728/TimeMoE-50M
+
+40 https://huggingface.co/google/paligemma2-3b-pt-224
+
+https://huggingface.co/google/paligemma2-3b-pt-224
+
+41 https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct
+
+https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct
+
+42 https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct
+
+https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct
+
+43 https://huggingface.co/mistralai/Pixtral-12B-2409
+
+https://huggingface.co/mistralai/Pixtral-12B-2409
+
+44 47 50 https://www.fda.gov/medical-devices/software-medical-device-samd/good-machine-learning-
+practice-medical-device-development-guiding-principles
+
+https://www.fda.gov/medical-devices/software-medical-device-samd/good-machine-learning-practice-medical-device-
+development-guiding-principles
+
+45 https://arxiv.org/abs/2106.09685
+
+https://arxiv.org/abs/2106.09685
+
+46 https://arxiv.org/abs/2309.06180
+
+https://arxiv.org/abs/2309.06180
+
+                                                                        16
+

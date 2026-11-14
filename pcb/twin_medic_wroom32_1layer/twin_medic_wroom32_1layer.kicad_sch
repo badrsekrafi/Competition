@@ -1,0 +1,89 @@
+(kicad_sch
+	(version 20250114)
+	(generator "codex")
+	(generator_version "1.0")
+	(uuid "442ca67c-6df7-44bb-b375-f0a2e2cf94b1")
+	(paper "A4")
+	(title_block
+		(title "Twin-Medic ESP32-WROOM-32 1-Layer PCB")
+		(date "2026-06-07")
+		(rev "V2-1L")
+	)
+	(lib_symbols)
+	(text "TWIN-MEDIC ESP32-WROOM-32 1-LAYER PCB"
+		(exclude_from_sim no)
+		(at 20 25 0)
+		(effects
+			(font (size 1.5 1.5))
+			(justify left bottom)
+		)
+		(uuid "5aa43299-410d-4952-a898-a98c2effc27d")
+	)
+	(text "This version removes all filter resistors/capacitors and uses direct sensor connector wiring."
+		(exclude_from_sim no)
+		(at 20 34 0)
+		(effects
+			(font (size 1.1 1.1))
+			(justify left bottom)
+		)
+		(uuid "e2a99588-ed1e-4453-82af-78a1038d0a4c")
+	)
+	(text "Power input must be regulated 3.3V. Do not connect LiPo directly to 3V3."
+		(exclude_from_sim no)
+		(at 20 42 0)
+		(effects
+			(font (size 1.1 1.1))
+			(justify left bottom)
+		)
+		(uuid "acc70dbc-7993-4a11-84e9-3fb936f6d2f6")
+	)
+	(text "EN is available on RUN_EN_JUMPER and UART_PROGRAM. Connect EN to 3V3 to run."
+		(exclude_from_sim no)
+		(at 20 50 0)
+		(effects
+			(font (size 1.1 1.1))
+			(justify left bottom)
+		)
+		(uuid "4f16bd6f-9d12-4da3-a5a4-09e1579b1531")
+	)
+	(text "For upload: pull GPIO0 to GND, reset/power-cycle, then use 3.3V USB-TTL on U0RXD/U0TXD."
+		(exclude_from_sim no)
+		(at 20 58 0)
+		(effects
+			(font (size 1.1 1.1))
+			(justify left bottom)
+		)
+		(uuid "1b7349ee-b96a-4704-a8d9-5a05572d4121")
+	)
+	(text "ECG: OUT=GPIO34, LO+=GPIO25, LO-=GPIO26."
+		(exclude_from_sim no)
+		(at 20 66 0)
+		(effects
+			(font (size 1.1 1.1))
+			(justify left bottom)
+		)
+		(uuid "a43b53d3-f8f3-4709-a6c9-ca64cc18c920")
+	)
+	(text "Piezo AO: RA=35, LA=32, RL=33, LL=36, CHEST=39."
+		(exclude_from_sim no)
+		(at 20 74 0)
+		(effects
+			(font (size 1.1 1.1))
+			(justify left bottom)
+		)
+		(uuid "16b585a4-e512-4c92-b7fb-1dfd71ecbe00")
+	)
+	(text "I2C modules: MAX30102 and MPU use SDA=21, SCL=22. If modules do not have pullups, I2C may fail."
+		(exclude_from_sim no)
+		(at 20 82 0)
+		(effects
+			(font (size 1.1 1.1))
+			(justify left bottom)
+		)
+		(uuid "5997ab26-88aa-4c0f-9ec4-714b13d78e45")
+	)
+	(sheet_instances
+		(path "/" (page "1"))
+	)
+	(embedded_fonts no)
+)

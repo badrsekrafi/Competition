@@ -1,0 +1,92 @@
+(kicad_sch
+	(version 20250114)
+	(generator "codex")
+	(generator_version "1.0")
+	(uuid "d00ab164-d058-46bf-af44-0decd6d1f951")
+	(paper "A4")
+	(title_block
+		(title "Twin-Medic Wearable ESP32 Carrier PCB")
+		(date "2026-06-07")
+		(rev "V1")
+		(company "Twin-Medic")
+	)
+	(lib_symbols)
+	(text "TWIN-MEDIC WEARABLE PCB V1 - CONNECTOR NET SUMMARY"
+		(exclude_from_sim no)
+		(at 20 25 0)
+		(effects
+			(font (size 1.5 1.5))
+			(justify left bottom)
+		)
+		(uuid "9c2c470f-6354-4ed3-9a62-cc455ec355c1")
+	)
+	(text "ESP32 DevKit carrier. Open PCB file for placed footprints and board outline."
+		(exclude_from_sim no)
+		(at 20 33 0)
+		(effects
+			(font (size 1.1 1.1))
+			(justify left bottom)
+		)
+		(uuid "68e6915a-6c8d-47d7-9748-4e1220dd2c76")
+	)
+	(text "ECG: AD8232 OUT=GPIO34, LO+=GPIO25, LO-=GPIO26."
+		(exclude_from_sim no)
+		(at 20 42 0)
+		(effects
+			(font (size 1.1 1.1))
+			(justify left bottom)
+		)
+		(uuid "5bcf3c6d-dccc-4956-8ac3-f8a0c2076cae")
+	)
+	(text "Piezo AO: RightArm=GPIO35, LeftArm=GPIO32, RightLeg=GPIO33, LeftLeg=GPIO36, Chest=GPIO39."
+		(exclude_from_sim no)
+		(at 20 50 0)
+		(effects
+			(font (size 1.1 1.1))
+			(justify left bottom)
+		)
+		(uuid "331a845a-ade6-470a-a2a5-4c7dcf1db220")
+	)
+	(text "I2C: MAX30102 + MPU on SDA=GPIO21 and SCL=GPIO22 with 4.7k pullups."
+		(exclude_from_sim no)
+		(at 20 58 0)
+		(effects
+			(font (size 1.1 1.1))
+			(justify left bottom)
+		)
+		(uuid "9a3e00d7-0b16-4de1-a926-4db72c41d747")
+	)
+	(text "Analog protection: 1k series, 1M piezo pulldown, 10nF/100nF filters."
+		(exclude_from_sim no)
+		(at 20 66 0)
+		(effects
+			(font (size 1.1 1.1))
+			(justify left bottom)
+		)
+		(uuid "6e465d47-d1a2-413b-b2a4-8e8d09666bac")
+	)
+	(text "Power: 3.3V sensors only. Do not feed 5V analog output to ESP32 ADC pins."
+		(exclude_from_sim no)
+		(at 20 74 0)
+		(effects
+			(font (size 1.1 1.1))
+			(justify left bottom)
+		)
+		(uuid "5d15f9e5-029f-4b05-a3bf-6cabfc1ce980")
+	)
+	(text "Safety: prototype only. Use battery power and insulation for body-connected testing."
+		(exclude_from_sim no)
+		(at 20 82 0)
+		(effects
+			(font (size 1.1 1.1))
+			(justify left bottom)
+		)
+		(uuid "1b5b9a2b-21d7-49b9-9bb4-1176e258ea4a")
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+	(embedded_fonts no)
+)

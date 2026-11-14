@@ -1,0 +1,314 @@
+TWIN-MEDIC PRETRAINED MODEL SPECIFICATIONS
+==========================================
+
+Goal:
+Use pretrained models only where they help. The ESP32 WROOM-32 CP2102 board must only collect
+sensor data and send telemetry. The pretrained AI models must run on the laptop/server/dashboard,
+not directly on the ESP32.
+
+
+1. MAIN PRETRAINED MODEL: MOMENT-1-base
+---------------------------------------
+
+Use for:
+- ECG AD8232 waveform
+- 5 piezo vibration signals
+- MPU-9250 / MPU-6500 motion signals
+- Optional MAX30102 pulse/SpO2 time-series
+
+Role in Twin-Medic:
+- Main time-series encoder.
+- Detects temporal patterns, impact events, abnormal ECG shape, unstable signals, motion spikes.
+
+Recommended use:
+- Start with feature extraction + classical ML first.
+- Then use MOMENT-1-base for embeddings or classification after you collect labeled data.
+
+Official model:
+- Hugging Face: AutonLab/MOMENT-1-base
+- Model type: time-series foundation model
+- License: MIT
+- Model size shown on Hugging Face: 0.1B parameters
+- Tensor type shown on Hugging Face: F32
+- Tasks: forecasting, classification, anomaly detection, imputation, representation learning
+- Python package: momentfm
+- Recommended Python version from model card: Python 3.11
+
+Input format for this project:
+- Sliding windows of sensor time-series.
+- Example window:
+  - 2 to 10 seconds of ECG samples
+  - 2 to 10 seconds of piezo delta samples
+  - 2 to 10 seconds of accelerometer/gyro samples
+- Shape concept:
+  - samples x channels
+  - channels can be ECG, piezo_1..piezo_5, accel_x/y/z, gyro_x/y/z, SpO2/IR if available
+
+Output to use:
+- Embedding vector for each time window
+- Or classification probabilities:
+  - normal
+  - impact_detected
+  - chest_impact
+  - limb_impact
+  - fall_or_motion_event
+  - sensor_error
+
+Where it runs:
+- Python service on the PC/server.
+- Not on ESP32.
+
+Dependencies:
+- Python 3.11
+- torch
+- transformers
+- momentfm
+- numpy
+- pandas
+- scikit-learn
+
+Why this model:
+- Your project is mainly streaming sensor time-series.
+- This is the closest pretrained model family to ECG + piezo + IMU signal analysis.
+
+Limit:
+- Needs real labeled Twin-Medic data for reliable medical/impact classification.
+- Do not trust zero-shot output for final medical decisions.
+
+
+2. TABULAR PRETRAINED MODEL: TabPFN
+-----------------------------------
+
+Use for:
+- Patient profile data
+- Extracted numeric features
+- Sensor quality flags
+- Summary features from each time window
+
+Role in Twin-Medic:
+- Risk classifier on structured data after feature extraction.
+- Good for small/medium datasets when you do not yet have a huge labeled dataset.
+
+Recommended use:
+- Use TabPFN for tabular prediction experiments.
+- Compare it against RandomForest, LogisticRegression, XGBoost/LightGBM.
+
+Official model family:
+- GitHub: PriorLabs/tabpfn
+- Docs: Prior Labs TabPFN models
+
+Useful model versions:
+- TabPFNv2:
+  - suited for smaller datasets
+  - up to around 10,000 rows x 500 features
+  - up to 10 classes
+  - handles numerical, categorical, and missing values
+  - better first local choice for your project
+- TabPFN-2.6:
+  - up to around 100,000 rows x 2,000 features
+  - up to 10 classes
+  - handles mixed data types and missing values
+  - check license before using outside research/testing
+- TabPFN-3:
+  - latest OSS default according to Prior Labs docs
+  - up to around 1,000,000 rows x 200 features, with row/feature trade-offs
+  - up to 160 classes
+  - requires correct license/API/commercial agreement for production or commercial decisions
+
+Input format for this project:
+- One row per event/window/session.
+- Example columns:
+  - bpm_ecg
+  - ecg_peak_to_peak
+  - ecg_std
+  - max_piezo_delta
+  - piezo_chest_delta
+  - piezo_right_arm_delta
+  - strongest_piezo_zone
+  - gyro_magnitude
+  - accel_magnitude
+  - spo2
+  - finger_detected
+  - ecg_quality
+  - piezo_quality
+  - age, sex, height, weight, known_condition flags if available
+
+Output to use:
+- risk_level
+- event_type
+- severity_class
+- confidence
+
+Where it runs:
+- Python service on the PC/server.
+- Not on ESP32.
+
+Dependencies:
+- tabpfn
+- torch
+- numpy
+- pandas
+- scikit-learn
+
+Why this model:
+- Your dashboard will produce many structured features.
+- TabPFN is designed for tabular prediction with fewer labels than classic deep learning normally needs.
+
+Limit:
+- Check license before production/commercial use.
+- Still requires correct labels from your real device tests.
+
+
+3. RECOMMENDATION TEXT MODEL: Gemma 2 2B IT or Mistral NeMo 12B Instruct
+----------------------------------------------------------------------
+
+Use for:
+- Rewriting a safe recommendation message in natural language.
+- Explaining model output to the dashboard user.
+
+Important:
+- This model must NOT decide the medical action by itself.
+- The action must come from your rule/policy engine first.
+- The LLM only converts a safe action schema into readable text.
+
+Option A - Gemma 2 2B IT:
+- Model family: Google Gemma
+- Type: decoder-only text model
+- Hugging Face model id: google/gemma-2-2b-it
+- Model size shown on Hugging Face: 3B parameters
+- Tensor type shown on Hugging Face: BF16
+- License: Gemma license
+- Good for: laptop-friendly text generation
+- Use when: your PC has limited GPU/CPU resources
+
+Option B - Mistral NeMo 12B Instruct:
+- Model family: Mistral NeMo
+- Type: multilingual open text model
+- Parameters: 12B
+- Context length: 128k tokens
+- License: Apache 2.0 according to Mistral model information
+- Tokenizer: Tekken tokenizer
+- Good for: stronger multilingual recommendation wording
+- Use when: you have stronger GPU or are using an API/local quantized runtime
+
+Input format for this project:
+- A safe JSON action generated by the policy layer.
+- Example:
+  {
+    "riskLevel": "medium",
+    "eventType": "right_arm_impact",
+    "confidence": 0.86,
+    "allowedAction": "check_right_arm_sensor_zone",
+    "forbiddenClaims": ["diagnosis", "medication", "medical certainty"]
+  }
+
+Output to use:
+- Short dashboard message:
+  - "Impact detected on right arm sensor zone. Check the patient position and sensor contact."
+
+Where it runs:
+- Optional local LLM service or API.
+- Not on ESP32.
+
+Dependencies:
+- transformers
+- accelerate
+- torch
+- optional: llama.cpp / Ollama / LM Studio for quantized local running
+
+Why this model:
+- It helps generate clean dashboard language.
+- It does not replace the prediction model.
+
+Limit:
+- Needs strong guardrails.
+- Should not produce diagnosis, medication advice, or emergency claims without human validation.
+
+
+4. BASELINE MODELS THAT YOU MUST STILL USE
+------------------------------------------
+
+These are not pretrained, but they are essential for comparison:
+
+- LogisticRegression
+- RandomForestClassifier
+- GradientBoostingClassifier
+- XGBoost or LightGBM
+- Simple 1D CNN / TCN trained on your own data
+
+Why:
+- If a simple model works better than a pretrained foundation model, use the simple model.
+- This is especially important because your first dataset will probably be small.
+
+
+5. FINAL RECOMMENDED ARCHITECTURE
+---------------------------------
+
+ESP32 WROOM-32 CP2102
+-> sends raw telemetry to Node server
+-> Node server stores JSONL/SQLite data
+-> feature extraction creates clean numeric features
+-> MOMENT-1-base creates time-series embeddings
+-> TabPFN/classical model predicts event/severity/risk
+-> policy engine chooses allowed recommendation
+-> optional Gemma/Mistral rewrites recommendation text
+-> dashboard shows result, confidence, signal quality, and warning
+
+
+6. EXPECTED RESULT IN DASHBOARD
+-------------------------------
+
+Example output:
+
+{
+  "eventType": "chest_impact",
+  "riskLevel": "high",
+  "severity": 0.81,
+  "confidence": 0.88,
+  "signalQuality": {
+    "ecg": "good",
+    "piezo": "good",
+    "max30102": "weak_contact",
+    "motion": "good"
+  },
+  "recommendation": "Strong chest vibration detected. Check the patient and verify sensor contact.",
+  "modelUsed": {
+    "timeSeriesEncoder": "MOMENT-1-base",
+    "tabularPredictor": "TabPFN or RandomForest baseline",
+    "textGenerator": "optional Gemma 2B IT or Mistral NeMo 12B"
+  }
+}
+
+
+7. WHAT TO IMPLEMENT FIRST
+--------------------------
+
+Step 1:
+- Add telemetry logging.
+
+Step 2:
+- Add labels in dashboard.
+
+Step 3:
+- Add feature extraction.
+
+Step 4:
+- Train RandomForest / XGBoost baseline.
+
+Step 5:
+- Add MOMENT embeddings only after you have enough labeled windows.
+
+Step 6:
+- Add TabPFN comparison.
+
+Step 7:
+- Add optional LLM message generator only after the prediction and policy layer are stable.
+
+
+Sources checked:
+- AutonLab/MOMENT-1-base model card: https://huggingface.co/AutonLab/MOMENT-1-base
+- Prior Labs TabPFN repository: https://github.com/PriorLabs/tabpfn
+- Prior Labs TabPFN model docs: https://docs.priorlabs.ai/models
+- Google Gemma 2 2B IT model card: https://huggingface.co/google/gemma-2-2b-it
+- Mistral NeMo model card: https://docs.mistral.ai/models/model-cards/mistral-nemo-12b-24-07
+- Mistral NeMo announcement: https://mistral.ai/news/mistral-nemo
